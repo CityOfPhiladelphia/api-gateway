@@ -1,0 +1,10 @@
+{
+  "name": "gateway",
+  "main": "gateway.js",
+  "dependencies": {
+    "express-rate-limit": "^2.6.0",
+    "http-proxy": "^1.16.2",
+    "js-yaml": "^3.8.3",
+    "winston": "^2.3.1"
+  }
+}
