@@ -28,7 +28,7 @@ with app.app_context():
     api.add_resource(BanListResource, '/bans')
     api.add_resource(BanResource, '/bans/<instance_id>')
     api.add_resource(KeyListResource, '/keys')
-    api.add_resource(KeyResource, '/keys/<key_id>')
+    api.add_resource(KeyResource, '/keys/<instance_id>')
 
 if __name__ == '__main__':
     app.run()

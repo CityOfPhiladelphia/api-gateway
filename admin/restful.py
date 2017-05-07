@@ -92,7 +92,7 @@ class QueryEngineMixin(object):
             if op in self.alias_operations:
                 op = self.alias_operations[op]
             if op not in self.allowed_operations:
-                abort(400, errors=['Operator `{}` not available'.format(op)])
+                abort(400, errors=['Operator `{}` not available on {}'.format(op, self.model.__name__)])
             field_op = list(filter(
                 lambda e: hasattr(field, e % op),
                 ['%s', '%s_', '__%s__']
@@ -126,18 +126,62 @@ class QueryEngineMixin(object):
 
         return offset, page_size
 
+    def get_ordering(self):
+        raw_ordering = request.args.get(self.order_by_key)
+        ordering = []
+
+        if raw_ordering is not None:
+            for raw_order_field in raw_ordering.split(','):
+                if raw_order_field[0:1] == '-':
+                    order = 'desc'
+                    field = raw_order_field[1:]
+                else:
+                    order = 'asc'
+                    field = raw_order_field
+
+                if not hasattr(self.model, field):
+                    abort(400, errors=['`{}` does not exist on {}'.format(field, self.model.__name__)])
+
+                model_field = getattr(self.model, field)
+                if order == 'desc':
+                    ordering.append(model_field.desc())
+                else:
+                    ordering.append(model_field)
+        else:
+            ordering.append(self.model.id) ## TODO: do not assume id is the pk
+
+        return ordering
+
+    def get_field_selection(self):
+        raw_fields = request.args.get(self.field_selection_key)
+
+        if raw_fields is None:
+            return [self.model]
+
+        fields = []
+        for raw_field in raw_fields.split(','):
+            if not hasattr(self.model, raw_field):
+                abort(400, errors=['`{}` does not exist on {}'.format(raw_field, self.model.__name__)])
+            fields.append(getattr(self.model, raw_field))
+        return fields
+
     def generate_query(self):
+        fields = self.get_field_selection()
         filters = self.get_filters()
         offset, limit = self.get_pagination()
+        ordering = self.get_ordering()
 
-        return self.session.query(self.model)\
+        return self.session.query(*fields)\
         .filter(*filters)\
+        .order_by(*ordering)\
         .offset(offset)\
         .limit(limit)
 
     def get(self):
         instances = self.generate_query()
-        return self.schema.dump(instances).data
+        out = self.schema.dump(instances).data
+        print(out)
+        return out
 
 class BaseListResource(Resource):
     def post(self):
