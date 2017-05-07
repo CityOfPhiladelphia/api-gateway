@@ -1,5 +1,6 @@
 from flask import request
 from flask_restful import Resource, abort
+from sqlalchemy.sql import func
 
 ### TODO: separate this out into library
 
@@ -177,11 +178,18 @@ class QueryEngineMixin(object):
         .offset(offset)\
         .limit(limit)
 
+    def get_query_count(self, query):
+        count_q = query.statement.with_only_columns([func.count()]).order_by(None)
+        return query.session.execute(count_q).scalar()
+
     def get(self):
         instances = self.generate_query()
-        out = self.schema.dump(instances).data
-        print(out)
-        return out
+        count = self.get_query_count(instances)
+        return {
+            'data': self.schema.dump(instances).data,
+            'count': count
+            ## TODO: page and total_pages
+        }
 
 class BaseListResource(Resource):
     def post(self):
