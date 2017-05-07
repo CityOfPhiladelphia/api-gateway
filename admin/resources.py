@@ -4,6 +4,48 @@ from marshmallow_sqlalchemy import ModelSchema, field_for
 
 from models import db, Ban, Key
 
+class BaseResource(Resource):
+    def get(self, instance_id):
+        instance = self.session.query(self.model).filter_by(id=instance_id).first() ## TODO: get pk from model
+        if not instance:
+            abort(404, message="{} {} not found".format(self.model_name, instance_id))
+        return self.schema.dump(instance).data
+
+    def put(self, instance_id):
+        raw_body = request.json
+
+        instance = self.session.query(self.model).filter_by(id=instance_id).first() ## TODO: get pk from model
+        if not instance:
+            abort(404, message="{} {} not found".format(self.model_name, instance_id))
+
+        instance_load = self.schema.load(raw_body, session=self.session, instance=instance)
+
+        if instance_load.errors:
+            abort(400, errors=instance_load.errors)
+
+        self.session.commit()
+        self.session.refresh(instance)
+        return self.schema.dump(instance).data
+
+class BaseListResource(Resource):
+    def post(self):
+        raw_body = request.json
+        instance_load = self.schema.load(raw_body, session=self.session)
+
+        if instance_load.errors:
+            abort(400, errors=instance_load.errors)
+
+        instance = instance_load.data
+
+        self.session.add(instance)
+        self.session.commit()
+        self.session.refresh(instance)
+        return self.schema.dump(instance).data
+
+    def get(self):
+        instances = self.session.query(self.model)
+        return self.schema.dump(instances).data
+
 class BanSchema(ModelSchema):
     id = field_for(Ban, 'id', dump_only=True)
     created_at = field_for(Ban, 'created_at', dump_only=True)
@@ -14,44 +56,36 @@ class BanSchema(ModelSchema):
 ban_schema = BanSchema()
 bans_schema = BanSchema(many=True)
 
-class BanResource(Resource):
-    def get(self, ban_id):
-        ban = db.session.query(Ban).filter_by(id=ban_id).first()
-        if not ban:
-            abort(404, message="Ban {} not found".format(ban_id))
-        return ban_schema.dump(ban).data
+class BanResource(BaseResource):
+    schema = ban_schema
+    model = Ban
+    model_name = 'Ban'
+    session = db.session
 
-    def put(self, ban_id):
-        raw_body = request.json
+class BanListResource(BaseListResource):
+    schema = bans_schema
+    model = Ban
+    model_name = 'Ban'
+    session = db.session
 
-        ban = db.session.query(Ban).filter_by(id=ban_id).first()
-        if not ban:
-            abort(404, message="Ban {} not found".format(ban_id))
+class KeySchema(ModelSchema):
+    id = field_for(Key, 'id', dump_only=True)
+    created_at = field_for(Key, 'created_at', dump_only=True)
+    updated_at = field_for(Key, 'updated_at', dump_only=True)
+    class Meta:
+        model = Key
 
-        ban_load = ban_schema.load(raw_body, session=db.session, instance=ban)
+key_schema = KeySchema()
+keys_schema = KeySchema(many=True)
 
-        if ban_load.errors:
-            abort(400, errors=ban_load.errors)
+class KeyResource(BaseResource):
+    schema = key_schema
+    model = Key
+    model_name = 'Key'
+    session = db.session
 
-        db.session.commit()
-        db.session.refresh(ban)
-        return ban_schema.dump(ban).data
-
-class BanListResource(Resource):
-    def post(self):
-        raw_body = request.json
-        ban_load = ban_schema.load(raw_body, session=db.session)
-
-        if ban_load.errors:
-            abort(400, errors=ban_load.errors)
-
-        ban = ban_load.data
-
-        db.session.add(ban)
-        db.session.commit()
-        db.session.refresh(ban)
-        return ban_schema.dump(ban).data
-
-    def get(self):
-        bans = db.session.query(Ban)
-        return bans_schema.dump(bans).data
+class KeyListResource(BaseListResource):
+    schema = keys_schema
+    model = Key
+    model_name = 'Key'
+    session = db.session

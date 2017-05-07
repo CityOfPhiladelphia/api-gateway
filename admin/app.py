@@ -4,7 +4,7 @@ import flask
 from flask_restful import Resource, Api
 
 from models import db
-from resources import BanResource, BanListResource
+from resources import BanResource, BanListResource, KeyResource, KeyListResource
 
 app = flask.Flask(__name__)
 app.config['DEBUG'] = os.getenv('DEBUG', False)
@@ -26,7 +26,9 @@ with app.app_context():
     ## TODO: GET by id or key
 
     api.add_resource(BanListResource, '/bans')
-    api.add_resource(BanResource, '/bans/<ban_id>')
+    api.add_resource(BanResource, '/bans/<instance_id>')
+    api.add_resource(KeyListResource, '/keys')
+    api.add_resource(KeyResource, '/keys/<key_id>')
 
 if __name__ == '__main__':
     app.run()
