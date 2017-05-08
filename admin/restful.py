@@ -9,7 +9,7 @@ class BaseResource(Resource):
         instance = self.session.query(self.model).filter_by(id=instance_id).first() ## TODO: get pk from model
         if not instance:
             abort(404, errors=['{} {} not found'.format(self.model.__name__, instance_id)])
-        return self.schema.dump(instance).data
+        return self.single_schema.dump(instance).data
 
     def put(self, instance_id):
         raw_body = request.json
@@ -18,14 +18,14 @@ class BaseResource(Resource):
         if not instance:
             abort(404, errors=['{} {} not found'.format(self.model.__name__, instance_id)])
 
-        instance_load = self.schema.load(raw_body, session=self.session, instance=instance)
+        instance_load = self.single_schema.load(raw_body, session=self.session, instance=instance)
 
         if instance_load.errors:
             abort(400, errors=instance_load.errors)
 
         self.session.commit()
         self.session.refresh(instance)
-        return self.schema.dump(instance).data
+        return self.single_schema.dump(instance).data
 
 class QueryEngineMixin(object):
     page_key = '$page'
@@ -87,17 +87,22 @@ class QueryEngineMixin(object):
                 op = split_key[1]
             else:
                 abort(400, errors=['Invalid filter argument `{}`'.format(key)])
+
             field = getattr(self.model, field_key, None)
             if field is None:
                 abort(400, errors=['Field `{}` does not exist on {}'.format(field_key, self.model.__name__)])
+            
             if op in self.alias_operations:
                 op = self.alias_operations[op]
+            
             if op not in self.allowed_operations:
                 abort(400, errors=['Operator `{}` not available on {}'.format(op, self.model.__name__)])
+            
             field_op = list(filter(
                 lambda e: hasattr(field, e % op),
                 ['%s', '%s_', '__%s__']
             ))[0] % op
+
             filters.append(getattr(field, field_op)(value))
         return filters
 
@@ -186,7 +191,7 @@ class QueryEngineMixin(object):
         instances = self.generate_query()
         count = self.get_query_count(instances)
         return {
-            'data': self.schema.dump(instances).data,
+            'data': self.many_schema.dump(instances).data,
             'count': count
             ## TODO: page and total_pages
         }
@@ -194,7 +199,7 @@ class QueryEngineMixin(object):
 class BaseListResource(Resource):
     def post(self):
         raw_body = request.json
-        instance_load = self.schema.load(raw_body, session=self.session)
+        instance_load = self.single_schema.load(raw_body, session=self.session)
 
         if instance_load.errors:
             abort(400, errors=instance_load.errors)
@@ -204,8 +209,8 @@ class BaseListResource(Resource):
         self.session.add(instance)
         self.session.commit()
         self.session.refresh(instance)
-        return self.schema.dump(instance).data
+        return self.single_schema.dump(instance).data
 
     def get(self):
         instances = self.session.query(self.model)
-        return self.schema.dump(instances).data
+        return self.many_schema.dump(instances).data

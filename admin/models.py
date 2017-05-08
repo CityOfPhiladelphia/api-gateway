@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import CIDR
 from sqlalchemy import func
 
 db = SQLAlchemy()
@@ -40,7 +40,7 @@ class Ban(db.Model):
     __tablename__ = 'bans'
 
     id = db.Column(db.Integer, primary_key=True)
-    cidr_blocks = db.Column(ARRAY(db.String))
+    cidr = db.Column(CIDR, nullable=False)
     active = db.Column(db.Boolean, nullable=False)
     expires_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime,
@@ -53,13 +53,13 @@ class Ban(db.Model):
 
     ## TODO: validate CIDR blocks
 
-    def __init__(self, cidr_blocks, active, expires_at):
-        self.cidr_blocks = cidr_blocks
+    def __init__(self, cidr, active, expires_at):
+        self.cidr = cidr
         self.active = active
         self.expires_at = expires_at
 
     def __repr__(self):
-        return '<Ban id: {} cidr_blocks: {} active: {} expires_at: {}>'.format(self.id, \
-                                                                               self.cidr_blocks, \
+        return '<Ban id: {} cidr: {} active: {} expires_at: {}>'.format(self.id, \
+                                                                               self.cidr, \
                                                                                self.active, \
                                                                                self.expires_at)
