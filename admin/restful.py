@@ -27,6 +27,14 @@ class BaseResource(Resource):
         self.session.refresh(instance)
         return self.single_schema.dump(instance).data
 
+    def delete(self, instance_id):
+        instance = self.session.query(self.model).filter_by(id=instance_id).first() ## TODO: get pk from model
+        if not instance:
+            abort(404, errors=['{} {} not found'.format(self.model.__name__, instance_id)])
+        self.session.delete(instance)
+        self.session.commit()
+        return None, 204
+
 class QueryEngineMixin(object):
     page_key = '$page'
     page_size_key = '$page_size'

@@ -44,6 +44,7 @@ class Ban(db.Model):
     title = db.Column(db.String)
     description = db.Column(db.String)
     cidr_blocks = db.relationship('CIDRBlock',
+                                  cascade='delete',
                                   backref='ban'
                                   # ,
                                   # lazy='joined'
