@@ -1,6 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.dialects.postgresql import CIDR
-from sqlalchemy import func
+from sqlalchemy import func, Index
 
 db = SQLAlchemy()
 
@@ -40,8 +40,14 @@ class Ban(db.Model):
     __tablename__ = 'bans'
 
     id = db.Column(db.Integer, primary_key=True)
-    cidr = db.Column(CIDR, nullable=False)
     active = db.Column(db.Boolean, nullable=False)
+    title = db.Column(db.String)
+    description = db.Column(db.String)
+    cidr_blocks = db.relationship('CIDRBlock',
+                                  backref='ban'
+                                  # ,
+                                  # lazy='joined'
+                                  )
     expires_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime,
                            nullable=False,
@@ -51,15 +57,41 @@ class Ban(db.Model):
                            server_default=func.now(),
                            server_onupdate=func.now())
 
-    ## TODO: validate CIDR blocks
-
-    def __init__(self, cidr, active, expires_at):
-        self.cidr = cidr
+    def __init__(self, active, title, description, cidr_blocks, expires_at):
         self.active = active
+        self.title = title
+        self.description = description
         self.expires_at = expires_at
+
+        for block in cidr_blocks:
+            self.cidr_blocks.append(block)
 
     def __repr__(self):
         return '<Ban id: {} cidr: {} active: {} expires_at: {}>'.format(self.id, \
-                                                                               self.cidr, \
-                                                                               self.active, \
-                                                                               self.expires_at)
+                                                                        self.active, \
+                                                                        self.title, \
+                                                                        self.expires_at)
+
+class CIDRBlock(db.Model):
+    __tablename__ = 'cider_blocks'
+
+    ## TODO: validate CIDR blocks
+
+    id = db.Column(db.Integer, primary_key=True)
+    ban_id = db.Column(db.Integer, db.ForeignKey('bans.id'))
+    cidr = db.Column(CIDR, nullable=False)
+    created_at = db.Column(db.DateTime,
+                           nullable=False,
+                           server_default=func.now())
+    updated_at = db.Column(db.DateTime,
+                           nullable=False,
+                           server_default=func.now(),
+                           server_onupdate=func.now())
+
+    def __init__(self, cidr):
+        self.cidr = cidr
+
+    def __repr__(self):
+        return '<CIDRBlock id: {} ban_id: {} cidr: {}>'.format(self.id, self.ban_id, self.cidr)
+
+Index('idx_cidr', CIDRBlock.__table__.c.cidr, postgresql_using='gist', postgresql_ops={'cidr': 'inet_ops'})

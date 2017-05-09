@@ -2,15 +2,27 @@ from marshmallow_sqlalchemy import ModelSchema, field_for
 from marshmallow import fields
 from sqlalchemy.dialects.postgresql import CIDR
 
-from models import db, Ban, Key
+from models import db, Ban, CIDRBlock, Key
 from restful import BaseResource, BaseListResource, QueryEngineMixin
+
+class CIDRBlockSchema(ModelSchema):
+    class Meta:
+        model = CIDRBlock
+        sqla_session = db.session
+
+    id = field_for(Ban, 'id', dump_only=True)
+    cidr = fields.Str()
+    created_at = field_for(Ban, 'created_at', dump_only=True)
+    updated_at = field_for(Ban, 'updated_at', dump_only=True)
 
 class BanSchema(ModelSchema):
     class Meta:
         model = Ban
 
     id = field_for(Ban, 'id', dump_only=True)
-    cidr = fields.Str()
+    title = field_for(Ban, 'title', required=True)
+    description = field_for(Ban, 'description', required=True)
+    cidr_blocks = fields.Nested(CIDRBlockSchema, many=True, required=True)
     created_at = field_for(Ban, 'created_at', dump_only=True)
     updated_at = field_for(Ban, 'updated_at', dump_only=True)
 
@@ -29,11 +41,12 @@ class BanListResource(QueryEngineMixin, BaseListResource):
     session = db.session
 
 class KeySchema(ModelSchema):
+    class Meta:
+        model = Key
+
     id = field_for(Key, 'id', dump_only=True)
     created_at = field_for(Key, 'created_at', dump_only=True)
     updated_at = field_for(Key, 'updated_at', dump_only=True)
-    class Meta:
-        model = Key
 
 key_schema = KeySchema()
 keys_schema = KeySchema(many=True)
