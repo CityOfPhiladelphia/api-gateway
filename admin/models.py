@@ -20,7 +20,7 @@ class Key(db.Model):
     updated_at = db.Column(db.DateTime,
                            nullable=False,
                            server_default=func.now(),
-                           server_onupdate=func.now())
+                           onupdate=func.now())
 
     ## TODO: add columns for custom rate limit
 
@@ -56,7 +56,7 @@ class Ban(db.Model):
     updated_at = db.Column(db.DateTime,
                            nullable=False,
                            server_default=func.now(),
-                           server_onupdate=func.now())
+                           onupdate=func.now())
 
     def __init__(self, active, title, description, cidr_blocks, expires_at):
         self.active = active
@@ -87,7 +87,7 @@ class CIDRBlock(db.Model):
     updated_at = db.Column(db.DateTime,
                            nullable=False,
                            server_default=func.now(),
-                           server_onupdate=func.now())
+                           onupdate=func.now())
 
     def __init__(self, cidr):
         self.cidr = cidr

@@ -15,6 +15,13 @@ class CIDRBlockSchema(ModelSchema):
     created_at = field_for(Ban, 'created_at', dump_only=True)
     updated_at = field_for(Ban, 'updated_at', dump_only=True)
 
+cidr_block_schema = CIDRBlockSchema()
+
+class CIDRBlockResource(BaseResource):
+    single_schema = cidr_block_schema
+    model = CIDRBlock
+    session = db.session
+
 class BanSchema(ModelSchema):
     class Meta:
         model = Ban
@@ -22,12 +29,15 @@ class BanSchema(ModelSchema):
     id = field_for(Ban, 'id', dump_only=True)
     title = field_for(Ban, 'title', required=True)
     description = field_for(Ban, 'description', required=True)
-    cidr_blocks = fields.Nested(CIDRBlockSchema, many=True, required=True)
+    cidr_blocks = fields.Nested(CIDRBlockSchema, dump_only=True, many=True)
     created_at = field_for(Ban, 'created_at', dump_only=True)
     updated_at = field_for(Ban, 'updated_at', dump_only=True)
 
+class BansSchema(BanSchema):
+    cidr_blocks = fields.Nested(CIDRBlockSchema, many=True, required=True)
+
 ban_schema = BanSchema()
-bans_schema = BanSchema(many=True)
+bans_schema = BansSchema(many=True)
 
 class BanResource(BaseResource):
     single_schema = ban_schema
