@@ -44,8 +44,8 @@ class Ban(db.Model):
     title = db.Column(db.String)
     description = db.Column(db.String)
     cidr_blocks = db.relationship('CIDRBlock',
-                                  cascade='delete',
-                                  backref='ban'
+                                  backref='ban',
+                                  passive_deletes=True # required to cascade deletes
                                   # ,
                                   # lazy='joined'
                                   )
@@ -79,7 +79,7 @@ class CIDRBlock(db.Model):
     ## TODO: validate CIDR blocks
 
     id = db.Column(db.Integer, primary_key=True)
-    ban_id = db.Column(db.Integer, db.ForeignKey('bans.id'))
+    ban_id = db.Column(db.Integer, db.ForeignKey('bans.id', ondelete='CASCADE'))
     cidr = db.Column(CIDR, nullable=False)
     created_at = db.Column(db.DateTime,
                            nullable=False,
