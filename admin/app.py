@@ -4,7 +4,7 @@ import flask
 from flask_restful import Resource, Api
 
 from models import db
-from resources import CIDRBlockResource, BanResource, BanListResource, KeyResource, KeyListResource
+import resources
 
 app = flask.Flask(__name__)
 app.config['DEBUG'] = os.getenv('DEBUG', False)
@@ -25,11 +25,12 @@ with app.app_context():
     ## TODO: filter out key in response except for POST
     ## TODO: GET by id or key
 
-    api.add_resource(CIDRBlockResource, '/bans/cidr-blocks/<instance_id>')
-    api.add_resource(BanListResource, '/bans')
-    api.add_resource(BanResource, '/bans/<instance_id>')
-    api.add_resource(KeyListResource, '/keys')
-    api.add_resource(KeyResource, '/keys/<instance_id>')
+    api.add_resource(resources.BanListResource, '/bans')
+    api.add_resource(resources.BanResource, '/bans/<instance_id>')
+    api.add_resource(resources.CIDRBlockListResource, '/bans/cidr-blocks')
+    api.add_resource(resources.CIDRBlockResource, '/bans/cidr-blocks/<instance_id>')
+    api.add_resource(resources.KeyListResource, '/keys')
+    api.add_resource(resources.KeyResource, '/keys/<instance_id>')
 
 if __name__ == '__main__':
     app.run()
