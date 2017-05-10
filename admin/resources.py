@@ -30,6 +30,11 @@ class CIDRBlockListResource(QueryEngineMixin, BaseResource):
     many_schema = cidr_blocks_schema
     model = CIDRBlock
     session = db.session
+    operator_overrides = {
+        'cidr': {
+            'contains': CIDRBlock.cidr.op('>>=')
+        }
+    }
 
 ## Bans
 

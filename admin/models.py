@@ -74,7 +74,7 @@ class Ban(db.Model):
                                                                         self.expires_at)
 
 class CIDRBlock(db.Model):
-    __tablename__ = 'cider_blocks'
+    __tablename__ = 'cidr_blocks'
 
     ## TODO: validate CIDR blocks
 
@@ -88,11 +88,11 @@ class CIDRBlock(db.Model):
                            nullable=False,
                            server_default=func.now(),
                            onupdate=func.now())
+    __table_args__ = (
+        Index('idx_cidr', cidr, postgresql_using='gist', postgresql_ops={'cidr': 'inet_ops'}),)
 
     def __init__(self, cidr):
         self.cidr = cidr
 
     def __repr__(self):
         return '<CIDRBlock id: {} ban_id: {} cidr: {}>'.format(self.id, self.ban_id, self.cidr)
-
-Index('idx_cidr', CIDRBlock.__table__.c.cidr, postgresql_using='gist', postgresql_ops={'cidr': 'inet_ops'})

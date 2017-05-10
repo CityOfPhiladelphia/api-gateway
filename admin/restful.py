@@ -94,8 +94,14 @@ class QueryEngineMixin(object):
         for key, value in request.args.items():
             if key in self.reserved_keys:
                 continue
+
             split_key = key.split('__')
             field_key = split_key[0]
+
+            field = getattr(self.model, field_key, None)
+            if field is None:
+                abort(400, errors=['Field `{}` does not exist on {}'.format(field_key, self.model.__name__)])
+
             num_args = len(split_key)
             if num_args == 1:
                 op = 'eq'
@@ -104,10 +110,12 @@ class QueryEngineMixin(object):
             else:
                 abort(400, errors=['Invalid filter argument `{}`'.format(key)])
 
-            field = getattr(self.model, field_key, None)
-            if field is None:
-                abort(400, errors=['Field `{}` does not exist on {}'.format(field_key, self.model.__name__)])
-            
+            if hasattr(self, 'operator_overrides') and \
+               field_key in self.operator_overrides and \
+               op in self.operator_overrides[field_key]:
+                filters.append(self.operator_overrides[field_key][op](value))
+                continue
+
             if op in self.alias_operations:
                 op = self.alias_operations[op]
             
