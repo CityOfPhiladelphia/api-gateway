@@ -5,6 +5,14 @@ from sqlalchemy.sql import func
 ### TODO: separate this out into library
 
 class BaseResource(Resource):
+    def dispatch(self, *args, **kwargs):
+        if hasattr(self, 'methods'):
+            method = request.method
+            if method not in self.methods and method not in ['HEAD','OPTIONS']:
+                raise Exception('Unimplemented method %r' % request.method)
+        return super(BaseResource, self).dispatch(*args, **kwargs)
+
+class RetrieveUpdateDeleteResource(BaseResource):
     def get(self, instance_id):
         instance = self.session.query(self.model).filter_by(id=instance_id).first() ## TODO: get pk from model
         if not instance:
@@ -204,7 +212,7 @@ class QueryEngineMixin(object):
             ## TODO: page and total_pages
         }
 
-class BaseListResource(Resource):
+class CreateListResource(BaseResource):
     def post(self):
         raw_body = request.json
         instance_load = self.single_schema.load(raw_body, session=self.session)

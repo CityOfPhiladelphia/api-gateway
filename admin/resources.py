@@ -3,7 +3,7 @@ from marshmallow import fields
 from sqlalchemy.dialects.postgresql import CIDR
 
 from models import db, Ban, CIDRBlock, Key
-from restful import BaseResource, BaseListResource, QueryEngineMixin
+from restful import RetrieveUpdateDeleteResource, CreateListResource, QueryEngineMixin
 
 class CIDRBlockSchema(ModelSchema):
     class Meta:
@@ -17,7 +17,8 @@ class CIDRBlockSchema(ModelSchema):
 
 cidr_block_schema = CIDRBlockSchema()
 
-class CIDRBlockResource(BaseResource):
+class CIDRBlockResource(RetrieveUpdateDeleteResource):
+    methods = ['GET','DELETE']
     single_schema = cidr_block_schema
     model = CIDRBlock
     session = db.session
@@ -40,12 +41,12 @@ ban_schema = BanSchema()
 ban_schema_put_get= BanSchemaPUTGET()
 bans_schema = BanSchema(many=True)
 
-class BanResource(BaseResource):
+class BanResource(RetrieveUpdateDeleteResource):
     single_schema = ban_schema_put_get
     model = Ban
     session = db.session
 
-class BanListResource(QueryEngineMixin, BaseListResource):
+class BanListResource(QueryEngineMixin, CreateListResource):
     single_schema = ban_schema
     many_schema = bans_schema
     model = Ban
@@ -62,12 +63,12 @@ class KeySchema(ModelSchema):
 key_schema = KeySchema()
 keys_schema = KeySchema(many=True)
 
-class KeyResource(BaseResource):
+class KeyResource(RetrieveUpdateDeleteResource):
     single_schema = key_schema
     model = Key
     session = db.session
 
-class KeyListResource(BaseListResource):
+class KeyListResource(CreateListResource):
     single_schema = key_schema
     many_schema = keys_schema
     model = Key
