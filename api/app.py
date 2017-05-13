@@ -32,5 +32,6 @@ with app.app_context():
     api.add_resource(resources.KeyListResource, '/keys')
     api.add_resource(resources.KeyResource, '/keys/<instance_id>')
 
+## dev server
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0')

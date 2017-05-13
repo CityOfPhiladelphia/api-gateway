@@ -1,0 +1,34 @@
+version: '2'
+services:
+  postgres:
+    image: postgres:9.6
+    environment:
+      - POSTGRES_USER=app
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=api_gateway
+  redis:
+    image: redis:3.2.8
+  gateway:
+    build: ./gateway
+    depends_on:
+      - api
+      - redis
+    volumes:
+      - ./config:/usr/src/config
+      - ./gateway:/usr/src/app
+    ports:
+      - "8001:8080"
+    environment:
+      - GATEWAY_REDIS_URL=redis://redis:6379
+      - GATEWAY_CONFIG_PATH=/usr/src/config/config.yml
+  api:
+    build: ./api
+    depends_on:
+      - postgres
+    volumes:
+      - ./api:/app
+    ports:
+      - "8000:5000"
+    environment:
+      - DEBUG=True
+      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://app:password@postgres/api_gateway
