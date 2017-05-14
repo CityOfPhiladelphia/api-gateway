@@ -22,7 +22,7 @@ class User(UserMixin, BaseMixin, db.Model):
     active = db.Column(db.Boolean, nullable=False)
     username = db.Column(db.String, index=True, nullable=False)
     email = db.Column(db.String)
-    role = db.Column(db.String) ## TODO: enum?
+    role = db.Column(db.Enum('normal','admin', name='user_roles'), nullable=False)
     hashed_password = db.Column(db.String)
 
     @property

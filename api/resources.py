@@ -14,8 +14,13 @@ def authorization(roles_permissions):
     def authorization_decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            if current_user.role and current_user.role in roles_permissions:
-                if request.method in roles_permissions[current_user.role]:
+            if hasattr(current_user, 'role'):
+                role = current_user.role
+            else:
+                role = None
+
+            if role and role in roles_permissions:
+                if request.method in roles_permissions[role]:
                     return func(*args, **kwargs)
 
             abort(403)
@@ -45,11 +50,16 @@ user_roles = {
 def user_authorization(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if current_user.role and current_user.role in user_roles:
-            if request.method in user_roles[current_user.role]:
+        if hasattr(current_user, 'role'):
+            role = current_user.role
+        else:
+            role = None
+        
+        if role and role in user_roles:
+            if request.method in user_roles[role]:
                 return func(*args, **kwargs)
 
-        if 'instance_id' in kwargs and current_user.id == int(kwargs['instance_id']):
+        if role and 'instance_id' in kwargs and current_user.id == int(kwargs['instance_id']):
             return func(*args, **kwargs)
 
         abort(403)
@@ -63,7 +73,7 @@ class UserResource(RetrieveUpdateDeleteResource):
     session = db.session
 
 class UserListResource(QueryEngineMixin, CreateListResource):
-    method_decorators = [login_required, user_authorization]
+    #method_decorators = [login_required, user_authorization]
 
     single_schema = user_schema
     many_schema = users_schema
