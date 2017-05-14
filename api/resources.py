@@ -66,14 +66,14 @@ def user_authorization(func):
     return wrapper
 
 class UserResource(RetrieveUpdateDeleteResource):
-    method_decorators = [login_required, user_authorization]
+    method_decorators = [user_authorization, login_required]
 
     single_schema = user_schema
     model = User
     session = db.session
 
 class UserListResource(QueryEngineMixin, CreateListResource):
-    #method_decorators = [login_required, user_authorization]
+    method_decorators = [user_authorization, login_required]
 
     single_schema = user_schema
     many_schema = users_schema
@@ -137,14 +137,14 @@ cidr_block_authorization = authorization({
 })
 
 class CIDRBlockResource(RetrieveUpdateDeleteResource):
-    method_decorators = [login_required, cidr_block_authorization]
+    method_decorators = [cidr_block_authorization, login_required]
     methods = ['GET','DELETE']
     single_schema = cidr_block_schema
     model = CIDRBlock
     session = db.session
 
 class CIDRBlockListResource(QueryEngineMixin, BaseResource):
-    method_decorators = [login_required, cidr_block_authorization]
+    method_decorators = [cidr_block_authorization, login_required]
     many_schema = cidr_blocks_schema
     model = CIDRBlock
     session = db.session
@@ -178,13 +178,13 @@ ban_authorization = authorization({
 })
 
 class BanResource(RetrieveUpdateDeleteResource):
-    method_decorators = [login_required, ban_authorization]
+    method_decorators = [ban_authorization, login_required]
     single_schema = ban_schema_put_get
     model = Ban
     session = db.session
 
 class BanListResource(QueryEngineMixin, CreateListResource):
-    method_decorators = [login_required, ban_authorization]
+    method_decorators = [ban_authorization, login_required]
     single_schema = ban_schema
     many_schema = bans_schema
     model = Ban
@@ -195,14 +195,20 @@ class BanListResource(QueryEngineMixin, CreateListResource):
 class KeySchema(ModelSchema):
     class Meta:
         model = Key
+        exclude = ['key']
 
     id = field_for(Key, 'id', dump_only=True)
     created_at = field_for(Key, 'created_at', dump_only=True)
     updated_at = field_for(Key, 'updated_at', dump_only=True)
 
-## TODO: only return key on POST
+class KeyCreateSchema(KeySchema):
+    class Meta:
+        model = Key
+
+    key = field_for(Key, 'key', dump_only=True)
 
 key_schema = KeySchema()
+key_create_schema = KeyCreateSchema()
 keys_schema = KeySchema(many=True)
 
 key_authorization = authorization({
@@ -211,14 +217,14 @@ key_authorization = authorization({
 })
 
 class KeyResource(RetrieveUpdateDeleteResource):
-    method_decorators = [login_required, key_authorization]
+    method_decorators = [key_authorization, login_required]
     single_schema = key_schema
     model = Key
     session = db.session
 
 class KeyListResource(CreateListResource):
-    method_decorators = [login_required, key_authorization]
-    single_schema = key_schema
+    method_decorators = [key_authorization, login_required]
+    single_schema = key_create_schema
     many_schema = keys_schema
     model = Key
     session = db.session

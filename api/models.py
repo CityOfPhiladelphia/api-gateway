@@ -1,3 +1,6 @@
+import binascii
+import os
+
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.dialects.postgresql import CIDR
 from sqlalchemy import func, Index
@@ -77,7 +80,6 @@ class Key(BaseMixin, db.Model):
     expires_at = db.Column(db.DateTime)
 
     ## TODO: add columns for custom rate limit
-    ## TODO: generate key on create
 
     def __init__(self, **data):
         self.active = data.get('active')
@@ -85,6 +87,8 @@ class Key(BaseMixin, db.Model):
         self.contact_name = data.get('contact_name')
         self.contact_email = data.get('contact_email')
         self.expires_at = data.get('expires_at')
+
+        self.key = binascii.hexlify(os.urandom(32)).decode('utf-8')
 
     def __repr__(self):
         return '<Key id: {} active: {} owner_name: {}>'.format(self.id, \
