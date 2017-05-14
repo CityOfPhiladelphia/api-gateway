@@ -77,6 +77,7 @@ class Key(BaseMixin, db.Model):
     expires_at = db.Column(db.DateTime)
 
     ## TODO: add columns for custom rate limit
+    ## TODO: generate key on create
 
     def __init__(self, **data):
         self.active = data.get('active')

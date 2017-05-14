@@ -1,12 +1,26 @@
+from functools import wraps
+
 from marshmallow_sqlalchemy import ModelSchema, field_for
 from marshmallow import Schema, fields
 from flask import request
 from flask_restful import Resource, abort
-from flask_login import login_user, logout_user
+from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy.dialects.postgresql import CIDR
 
 from models import db, Ban, CIDRBlock, Key, User
 from restful import RetrieveUpdateDeleteResource, CreateListResource, QueryEngineMixin, BaseResource
+
+def authorization(roles_permissions):
+    def authorization_decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            if current_user.role and current_user.role in roles_permissions:
+                if request.method in roles_permissions[current_user.role]:
+                    return func(*args, **kwargs)
+
+            abort(403)
+        return wrapper
+    return authorization_decorator
 
 ## Users
 
@@ -23,12 +37,34 @@ class UserSchema(ModelSchema):
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)
 
+user_roles = {
+    'normal': ['GET'],
+    'admin': ['POST','GET','PUT','DELETE']
+}
+
+def user_authorization(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if current_user.role and current_user.role in user_roles:
+            if request.method in user_roles[current_user.role]:
+                return func(*args, **kwargs)
+
+        if 'instance_id' in kwargs and current_user.id == int(kwargs['instance_id']):
+            return func(*args, **kwargs)
+
+        abort(403)
+    return wrapper
+
 class UserResource(RetrieveUpdateDeleteResource):
+    method_decorators = [login_required, user_authorization]
+
     single_schema = user_schema
     model = User
     session = db.session
 
 class UserListResource(QueryEngineMixin, CreateListResource):
+    method_decorators = [login_required, user_authorization]
+
     single_schema = user_schema
     many_schema = users_schema
     model = User
@@ -85,13 +121,20 @@ class CIDRBlockSchema(ModelSchema):
 cidr_block_schema = CIDRBlockSchema()
 cidr_blocks_schema = CIDRBlockSchema(many=True)
 
+cidr_block_authorization = authorization({
+    'normal': ['GET'],
+    'admin': ['POST','GET','DELETE']
+})
+
 class CIDRBlockResource(RetrieveUpdateDeleteResource):
+    method_decorators = [login_required, cidr_block_authorization]
     methods = ['GET','DELETE']
     single_schema = cidr_block_schema
     model = CIDRBlock
     session = db.session
 
 class CIDRBlockListResource(QueryEngineMixin, BaseResource):
+    method_decorators = [login_required, cidr_block_authorization]
     many_schema = cidr_blocks_schema
     model = CIDRBlock
     session = db.session
@@ -119,12 +162,19 @@ ban_schema = BanSchema()
 ban_schema_put_get= BanSchemaPUTGET()
 bans_schema = BanSchema(many=True)
 
+ban_authorization = authorization({
+    'normal': ['GET'],
+    'admin': ['POST','PUT','GET','DELETE']
+})
+
 class BanResource(RetrieveUpdateDeleteResource):
+    method_decorators = [login_required, ban_authorization]
     single_schema = ban_schema_put_get
     model = Ban
     session = db.session
 
 class BanListResource(QueryEngineMixin, CreateListResource):
+    method_decorators = [login_required, ban_authorization]
     single_schema = ban_schema
     many_schema = bans_schema
     model = Ban
@@ -140,15 +190,24 @@ class KeySchema(ModelSchema):
     created_at = field_for(Key, 'created_at', dump_only=True)
     updated_at = field_for(Key, 'updated_at', dump_only=True)
 
+## TODO: only return key on POST
+
 key_schema = KeySchema()
 keys_schema = KeySchema(many=True)
 
+key_authorization = authorization({
+    'normal': ['GET'],
+    'admin': ['POST','PUT','GET','DELETE']
+})
+
 class KeyResource(RetrieveUpdateDeleteResource):
+    method_decorators = [login_required, key_authorization]
     single_schema = key_schema
     model = Key
     session = db.session
 
 class KeyListResource(CreateListResource):
+    method_decorators = [login_required, key_authorization]
     single_schema = key_schema
     many_schema = keys_schema
     model = Key

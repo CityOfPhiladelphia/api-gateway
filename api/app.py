@@ -27,26 +27,21 @@ login_manager.init_app(app)
 def load_user(user_id):
     return db.session.query(User).filter(User.id == user_id).first()
 
-## TODO: RBAC
+## TODO: gateway API access
 ## TODO: CSRF support using header?
 
 with app.app_context():
     db.create_all() ## TODO: move to separate migration script? like https://realpython.com/blog/python/flask-by-example-part-2-postgres-sqlalchemy-and-alembic/
 
-    ## TODO: anon = GET, logged in user = GET, admin = GET, POST, PUT, DELETE
-    ## TODO: anon = GET, logged in user = GET, admin = GET, POST, PUT, DELETE
-    ## TODO: filter out key in response except for POST
-    ## TODO: GET by id or key
-
     api.add_resource(resources.UserListResource, '/users')
-    api.add_resource(resources.UserResource, '/users/<instance_id>')
+    api.add_resource(resources.UserResource, '/users/<int:instance_id>')
     api.add_resource(resources.SessionResource, '/session')
     api.add_resource(resources.BanListResource, '/bans')
-    api.add_resource(resources.BanResource, '/bans/<instance_id>')
+    api.add_resource(resources.BanResource, '/bans/<int:instance_id>')
     api.add_resource(resources.CIDRBlockListResource, '/bans/cidr-blocks')
-    api.add_resource(resources.CIDRBlockResource, '/bans/cidr-blocks/<instance_id>')
+    api.add_resource(resources.CIDRBlockResource, '/bans/cidr-blocks/<int:instance_id>')
     api.add_resource(resources.KeyListResource, '/keys')
-    api.add_resource(resources.KeyResource, '/keys/<instance_id>')
+    api.add_resource(resources.KeyResource, '/keys/<int:instance_id>')
 
 ## dev server
 if __name__ == '__main__':
