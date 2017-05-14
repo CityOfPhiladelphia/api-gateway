@@ -65,7 +65,7 @@ function authenticate(endpoint, req, callback) {
       key = qs.gatekeeper;
   }
 
-  // TODO: validate using regex
+  // TODO: validate key using regex
 
   if (key === null)
     return process.nextTick(callback);

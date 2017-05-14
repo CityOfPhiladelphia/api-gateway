@@ -1,9 +1,74 @@
 from marshmallow_sqlalchemy import ModelSchema, field_for
-from marshmallow import fields
+from marshmallow import Schema, fields
+from flask import request
+from flask_restful import Resource, abort
+from flask_login import login_user, logout_user
 from sqlalchemy.dialects.postgresql import CIDR
 
-from models import db, Ban, CIDRBlock, Key
+from models import db, Ban, CIDRBlock, Key, User
 from restful import RetrieveUpdateDeleteResource, CreateListResource, QueryEngineMixin, BaseResource
+
+## Users
+
+class UserSchema(ModelSchema):
+    class Meta:
+        model = User
+        exclude = ['hashed_password']
+
+    id = field_for(User, 'id', dump_only=True)
+    password = fields.Str(load_only=True)
+    created_at = field_for(User, 'created_at', dump_only=True)
+    updated_at = field_for(User, 'updated_at', dump_only=True)
+
+user_schema = UserSchema()
+users_schema = UserSchema(many=True)
+
+class UserResource(RetrieveUpdateDeleteResource):
+    single_schema = user_schema
+    model = User
+    session = db.session
+
+class UserListResource(QueryEngineMixin, CreateListResource):
+    single_schema = user_schema
+    many_schema = users_schema
+    model = User
+    session = db.session
+
+## Sessions
+
+class SessionSchema(Schema):
+    username = fields.Str(required=True)
+    password = fields.Str(required=True)
+
+session_schema = SessionSchema()
+
+class SessionResource(Resource):
+    def post(self):
+        raw_body = request.json
+        session_load = session_schema.load(raw_body)
+
+        if session_load.errors:
+            abort(400, errors=session_load.errors)
+
+        session = session_load.data
+
+        user = db.session.query(User).filter(User.username == session['username']).first()
+
+        if not user:
+            abort(401, errors=['Not Authorized'])
+
+        password_matches = user.verify_password(session['password'])
+        if not password_matches:
+            abort(401, errors=['Not Authorized'])
+
+        login_user(user)
+
+        return None, 204
+
+    def delete(self):
+        logout_user()
+
+        return None, 204
 
 ## CIDR Blocks
 
@@ -43,8 +108,6 @@ class BanSchema(ModelSchema):
         model = Ban
 
     id = field_for(Ban, 'id', dump_only=True)
-    title = field_for(Ban, 'title', required=True)
-    description = field_for(Ban, 'description', required=True)
     cidr_blocks = fields.Nested(CIDRBlockSchema, many=True, required=True)
     created_at = field_for(Ban, 'created_at', dump_only=True)
     updated_at = field_for(Ban, 'updated_at', dump_only=True)
