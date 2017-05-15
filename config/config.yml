@@ -3,5 +3,9 @@ endpoints:
     pattern: /ais/v1(/.*)
     target: http://ais-api-prod.us-east-1.elasticbeanstalk.com$1
     rateLimit:
-      windowMs: 60000 # 1 minute
-      max: 100 # 100 requests per window
+      anonymous:
+        windowMs: 60000 # 1 minute
+        max: 100 # 100 requests per window
+      authenticated:
+        windowMs: 60000 # 1 minute
+        max: 300 # 300 requests per window

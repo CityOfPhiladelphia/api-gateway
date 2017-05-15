@@ -72,7 +72,7 @@ class User(UserMixin, BaseMixin, db.Model):
 class Key(BaseMixin, db.Model):
     __tablename__ = 'keys'
 
-    key = db.Column(db.String)
+    key = db.Column(db.String, index=True)
     active = db.Column(db.Boolean, nullable=False)
     owner_name = db.Column(db.String)
     contact_name = db.Column(db.String)
