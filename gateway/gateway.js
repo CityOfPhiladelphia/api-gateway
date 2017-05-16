@@ -17,6 +17,7 @@ const DEFAULT_RATE_LIMIT_WINDOW = 900000; // default 15 minutes
 const DEFAULT_RATE_LIMIT_MAX = 100; // requests per window
 
 const GATEWAY_API_BASE_URL = process.env.GATEWAY_API_BASE_URL || 'http://localhost:5000';
+const GATEWAY_API_TOKEN = process.env.GATEWAY_KEY;
 
 const logger = new (winston.Logger)({
   transports: [
@@ -42,7 +43,7 @@ function getEndpoint(url) {
     if (config.endpoints[i].pattern.test(url))
       return config.endpoints[i];
   }
-  throw new Error('No endpoint pattern matches: ' + url);
+  throw new Error('No endpoint pattern matches: ' + url); // TODO: callback error?
 }
 
 const proxy = httpProxy.createProxyServer({});
@@ -75,6 +76,7 @@ function proxyReq(req, res, target) {
 function checkKey(key, callback) {
   request(
     GATEWAY_API_BASE_URL + '/keys?key=' + key,
+    { auth: { bearer: GATEWAY_API_TOKEN } },
     function (err, res, body) {
       if (err) return callback(err);
 
@@ -189,6 +191,7 @@ function checkBan(req, res, callback) {
   var ip = getUserIp(req); // TODO: add this to request for use by getKey?
   request( // TODO: cache in redis
     GATEWAY_API_BASE_URL + '/bans/cidr-blocks?cidr__contains=' + ip,
+    { auth: { bearer: GATEWAY_API_TOKEN } },
     function (err, banRes, body) {
       if (err) return callback(err);
 
@@ -209,8 +212,10 @@ function checkBan(req, res, callback) {
 http.createServer(function(req, res) {
   // TODO: try/catch with 500?
 
-  // TODO: set common proxy headers - is this done by the proxy lib?
+  // TODO: set common proxy headers - is this done by the proxy lib? - http://docs.aws.amazon.com/elasticloadbalancing/latest/classic/x-forwarded-headers.html
   // TODO: create global limit?
+  // TODO: blow away existing X-Forwarded-For ? could be a security issue
+  // TODO: allow case insentive patterns? just pass an options key/value?
 
   checkBan(req, res, function (err) {
     if (err) return errorReq(req, res, err);

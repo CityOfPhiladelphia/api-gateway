@@ -23,6 +23,7 @@ services:
       - GATEWAY_REDIS_URL=redis://redis:6379
       - GATEWAY_CONFIG_PATH=/usr/src/config/config.yml
       - GATEWAY_API_BASE_URL=http://api:5000
+      - GATEWAY_KEY=4juA6l748gdJ7jN5112p2m0710lbkR4u
   api:
     build: ./api
     depends_on:
@@ -34,3 +35,4 @@ services:
     environment:
       - DEBUG=True
       - SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://app:password@postgres/api_gateway
+      - GATEWAY_KEY=4juA6l748gdJ7jN5112p2m0710lbkR4u

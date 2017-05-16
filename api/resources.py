@@ -1,11 +1,12 @@
 from functools import wraps
 
 from marshmallow_sqlalchemy import ModelSchema, field_for
-from marshmallow import Schema, fields
+from marshmallow import Schema, fields, validates_schema, ValidationError
 from flask import request
 from flask_restful import Resource, abort
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy.dialects.postgresql import CIDR
+from netaddr import IPNetwork
 
 from models import db, Ban, CIDRBlock, Key, User
 from restful import RetrieveUpdateDeleteResource, CreateListResource, QueryEngineMixin, BaseResource
@@ -128,10 +129,18 @@ class CIDRBlockSchema(ModelSchema):
     created_at = field_for(Ban, 'created_at', dump_only=True)
     updated_at = field_for(Ban, 'updated_at', dump_only=True)
 
+    @validates_schema
+    def validate_cidr(self, data):
+        try:
+            IPNetwork(data['cidr']) # will raise an exception on an invalid network
+        except:
+            raise ValidationError("'{}' is an invalid CIDR".format(data['cidr']))
+
 cidr_block_schema = CIDRBlockSchema()
 cidr_blocks_schema = CIDRBlockSchema(many=True)
 
 cidr_block_authorization = authorization({
+    'gateway': ['GET'],
     'normal': ['GET'],
     'admin': ['POST','GET','DELETE']
 })
@@ -173,6 +182,7 @@ ban_schema_put_get= BanSchemaPUTGET()
 bans_schema = BanSchema(many=True)
 
 ban_authorization = authorization({
+    'gateway': ['GET'],
     'normal': ['GET'],
     'admin': ['POST','PUT','GET','DELETE']
 })
@@ -212,6 +222,7 @@ key_create_schema = KeyCreateSchema()
 keys_schema = KeySchema(many=True)
 
 key_authorization = authorization({
+    'gateway': ['GET'],
     'normal': ['GET'],
     'admin': ['POST','PUT','GET','DELETE']
 })

@@ -1,8 +1,9 @@
 import os
 
 import flask
+from flask.sessions import SecureCookieSessionInterface
 from flask_restful import Resource, Api
-from flask_login import LoginManager
+from flask_login import LoginManager, AnonymousUserMixin, current_user
 
 from models import db, User
 import resources
@@ -17,6 +18,9 @@ app.config['SESSION_COOKIE_DOMAIN'] = os.getenv('FLASK_SESSION_DOMAIN', None)
 app.config['SESSION_COOKIE_SECURE'] = os.getenv('FLASK_SESSION_SECURE', False)
 app.secret_key = os.getenv('FLASK_SESSION_SECRET_KEY')
 
+# secret to identify gateway API requests
+GATEWAY_KEY = os.getenv('GATEWAY_KEY', None)
+
 db.init_app(app)
 api = Api(app)
 
@@ -27,8 +31,43 @@ login_manager.init_app(app)
 def load_user(user_id):
     return db.session.query(User).filter(User.id == user_id).first()
 
-## TODO: gateway API access
+class GatewayUser(AnonymousUserMixin):
+    role = 'gateway'
+
+    @property
+    def is_authenticated(self):
+        return True
+
+    @property
+    def is_active(self):
+        return True
+
+    @property
+    def is_anonymous(self):
+        return False
+
+@login_manager.request_loader
+def load_user_from_request(request):
+    api_key = request.headers.get('Authorization')
+    if api_key:
+        api_key = api_key.replace('Bearer ', '', 1)
+        if api_key == GATEWAY_KEY:
+            return GatewayUser()
+    return None
+
+## Skip creating a session for API requests
+class CustomSessionInterface(SecureCookieSessionInterface):
+    def save_session(self, *args, **kwargs):
+        if current_user and hasattr(current_user, 'role') and current_user.role == 'gateway':
+            return
+        return super(CustomSessionInterface, self).save_session(*args,
+                                                                **kwargs)
+
+app.session_interface = CustomSessionInterface()
+
 ## TODO: CSRF support using header?
+## TODO: hash_password should not be queryable
+## TODO: store both v4 and v6 versions of IPs in cidr list?
 
 with app.app_context():
     db.create_all() ## TODO: move to separate migration script? like https://realpython.com/blog/python/flask-by-example-part-2-postgres-sqlalchemy-and-alembic/

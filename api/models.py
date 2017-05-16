@@ -4,8 +4,10 @@ import os
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.dialects.postgresql import CIDR
 from sqlalchemy import func, Index
+from sqlalchemy.orm import validates
 from flask_login import UserMixin
 from passlib.hash import argon2
+from netaddr import IPNetwork
 
 db = SQLAlchemy()
 
@@ -129,8 +131,6 @@ class Ban(BaseMixin, db.Model):
 class CIDRBlock(BaseMixin, db.Model):
     __tablename__ = 'cidr_blocks'
 
-    ## TODO: validate CIDR blocks
-
     ban_id = db.Column(db.Integer, db.ForeignKey('bans.id', ondelete='CASCADE'))
     cidr = db.Column(CIDR, nullable=False)
 
@@ -142,3 +142,8 @@ class CIDRBlock(BaseMixin, db.Model):
 
     def __repr__(self):
         return '<CIDRBlock id: {} ban_id: {} cidr: {}>'.format(self.id, self.ban_id, self.cidr)
+
+    @validates('cidr')
+    def validate_cidr(self, key, cidr):
+        IPNetwork(cidr) # will raise an exception on an invalid network
+        return cidr
