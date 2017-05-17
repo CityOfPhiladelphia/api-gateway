@@ -216,6 +216,7 @@ http.createServer(function(req, res) {
   // TODO: create global limit?
   // TODO: blow away existing X-Forwarded-For ? could be a security issue
   // TODO: allow case insentive patterns? just pass an options key/value?
+  // TODO: header injections? - like CORS
 
   checkBan(req, res, function (err) {
     if (err) return errorReq(req, res, err);

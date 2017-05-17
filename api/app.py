@@ -65,7 +65,6 @@ class CustomSessionInterface(SecureCookieSessionInterface):
 
 app.session_interface = CustomSessionInterface()
 
-## TODO: CSRF support using header?
 ## TODO: hash_password should not be queryable
 ## TODO: store both v4 and v6 versions of IPs in cidr list?
 

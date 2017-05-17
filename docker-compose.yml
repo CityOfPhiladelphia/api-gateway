@@ -35,4 +35,6 @@ services:
     environment:
       - DEBUG=True
       - SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://app:password@postgres/api_gateway
+      - FLASK_SESSION_SECRET_KEY=1147C294BE7F41FF866D1457F4638
+      - CSRF_SECRET=A467489B85F44B7B3582671278CCF
       - GATEWAY_KEY=4juA6l748gdJ7jN5112p2m0710lbkR4u

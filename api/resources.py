@@ -1,4 +1,6 @@
 from functools import wraps
+import binascii
+import os
 
 from marshmallow_sqlalchemy import ModelSchema, field_for
 from marshmallow import Schema, fields, validates_schema, ValidationError
@@ -7,9 +9,13 @@ from flask_restful import Resource, abort
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy.dialects.postgresql import CIDR
 from netaddr import IPNetwork
+from itsdangerous import URLSafeSerializer
 
 from models import db, Ban, CIDRBlock, Key, User
 from restful import RetrieveUpdateDeleteResource, CreateListResource, QueryEngineMixin, BaseResource
+
+CSRF_SECRET = os.getenv('CSRF_SECRET', None)
+csrf_signer = URLSafeSerializer(CSRF_SECRET)
 
 def authorization(roles_permissions):
     def authorization_decorator(func):
@@ -27,6 +33,21 @@ def authorization(roles_permissions):
             abort(403)
         return wrapper
     return authorization_decorator
+
+def csrf_check(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if request.method in ['GET','HEAD','OPTIONS'] or current_user.role == 'gateway':
+            return func(*args, **kwargs)
+
+        ## check for X-CSRF header and check signature
+        try:
+            csrf_signer.loads(request.headers['X-CSRF'])
+        except:
+            abort(401)
+
+        return func(*args, **kwargs)
+    return wrapper
 
 ## Users
 
@@ -67,14 +88,14 @@ def user_authorization(func):
     return wrapper
 
 class UserResource(RetrieveUpdateDeleteResource):
-    method_decorators = [user_authorization, login_required]
+    method_decorators = [csrf_check, user_authorization, login_required]
 
     single_schema = user_schema
     model = User
     session = db.session
 
 class UserListResource(QueryEngineMixin, CreateListResource):
-    method_decorators = [user_authorization, login_required]
+    method_decorators = [csrf_check, user_authorization, login_required]
 
     single_schema = user_schema
     many_schema = users_schema
@@ -110,7 +131,11 @@ class SessionResource(Resource):
 
         login_user(user)
 
-        return None, 204
+        response_body = {
+            'csrf_token': csrf_signer.dumps(binascii.hexlify(os.urandom(32)).decode('utf-8'))
+        }
+
+        return response_body
 
     def delete(self):
         logout_user()
@@ -146,14 +171,14 @@ cidr_block_authorization = authorization({
 })
 
 class CIDRBlockResource(RetrieveUpdateDeleteResource):
-    method_decorators = [cidr_block_authorization, login_required]
+    method_decorators = [csrf_check, cidr_block_authorization, login_required]
     methods = ['GET','DELETE']
     single_schema = cidr_block_schema
     model = CIDRBlock
     session = db.session
 
 class CIDRBlockListResource(QueryEngineMixin, BaseResource):
-    method_decorators = [cidr_block_authorization, login_required]
+    method_decorators = [csrf_check, cidr_block_authorization, login_required]
     many_schema = cidr_blocks_schema
     model = CIDRBlock
     session = db.session
@@ -188,13 +213,13 @@ ban_authorization = authorization({
 })
 
 class BanResource(RetrieveUpdateDeleteResource):
-    method_decorators = [ban_authorization, login_required]
+    method_decorators = [csrf_check, ban_authorization, login_required]
     single_schema = ban_schema_put_get
     model = Ban
     session = db.session
 
 class BanListResource(QueryEngineMixin, CreateListResource):
-    method_decorators = [ban_authorization, login_required]
+    method_decorators = [csrf_check, ban_authorization, login_required]
     single_schema = ban_schema
     many_schema = bans_schema
     model = Ban
@@ -228,13 +253,13 @@ key_authorization = authorization({
 })
 
 class KeyResource(RetrieveUpdateDeleteResource):
-    method_decorators = [key_authorization, login_required]
+    method_decorators = [csrf_check, key_authorization, login_required]
     single_schema = key_schema
     model = Key
     session = db.session
 
 class KeyListResource(CreateListResource):
-    method_decorators = [key_authorization, login_required]
+    method_decorators = [csrf_check, key_authorization, login_required]
     single_schema = key_create_schema
     many_schema = keys_schema
     model = Key
