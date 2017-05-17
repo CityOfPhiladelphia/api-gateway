@@ -97,6 +97,7 @@ class UserResource(RetrieveUpdateDeleteResource):
 class UserListResource(QueryEngineMixin, CreateListResource):
     method_decorators = [csrf_check, user_authorization, login_required]
 
+    query_engine_exclude_fields = ['hashed_password', 'password']
     single_schema = user_schema
     many_schema = users_schema
     model = User
