@@ -100,10 +100,6 @@ class QueryEngineMixin(object):
             split_key = key.split('__')
             field_key = split_key[0]
 
-            print(self.query_engine_exclude_fields)
-            print(field_key)
-            print(field_key in self.query_engine_exclude_fields)
-
             field = getattr(self.model, field_key, None)
             if field is None or field_key in self.query_engine_exclude_fields:
                 abort(400, errors=['Field `{}` does not exist or is not available for query on {}'.format(field_key, self.model.__name__)])
