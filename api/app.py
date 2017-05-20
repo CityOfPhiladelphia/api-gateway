@@ -65,6 +65,7 @@ class CustomSessionInterface(SecureCookieSessionInterface):
 
 app.session_interface = CustomSessionInterface()
 
+## TODO: session expiration?
 ## TODO: store both v4 and v6 versions of IPs in cidr list?
 
 with app.app_context():
