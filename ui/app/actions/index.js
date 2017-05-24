@@ -1,18 +1,5 @@
+import { api } from '../utils';
 import * as types from './types';
-
-const api = axios.create({
-  baseURL: 'http://localhost:8000'
-});
-
-api.interceptors.request.use((config) => {
-  // TODO: add csrf header if method is unsafe
-  return config;
-});
-
-api.interceptors.response.use((response) => {
-  // TODO: log errors
-  return response;
-});
 
 const apiError = (res) => {
   return {
@@ -27,10 +14,9 @@ const loading = () => {
   }
 }
 
-const loginSuccess = (data) => {
+const loginSuccess = () => {
   return {
-    type: types.LOGIN_SUCCESS,
-    data
+    type: types.LOGIN_SUCCESS
   }
 }
 
@@ -48,9 +34,11 @@ export const login = (username, password) => {
       password: password
     })
     .then((res) => {
-      if (res.status == 200)
-        dispatch(loginSucess(res.data))
-      else if (res.status == 401 || res.status == 400)
+      if (res.status == 200) {
+        localStorage.setItem('csrf_token', res.data.csrf_token);
+        dispatch(loginSucess())
+
+      } else if (res.status == 401 || res.status == 400)
         dispatch(loginFailed())
       else
         dispatch(apiError(res))

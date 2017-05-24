@@ -49,7 +49,6 @@ function errorReq(req, res, err) {
 http.createServer(function(req, res) {
   // TODO: try/catch with 500?
 
-  // TODO: create global limit?
   // TODO: header injections? - like CORS
 
   req.startTime = new Date();

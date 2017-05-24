@@ -1,12 +1,11 @@
 import React from 'react';
-const PropTypes = React.PropTypes;
+import PropTypes from 'prop-types';
 import Paper from 'material-ui/Paper';
 import TextField from 'material-ui/TextField';
 import RaisedButton from 'material-ui/RaisedButton';
 
 const styles = {
   loginPaper: {
-    height: 250,
     width: 300,
     margin: '0 auto 0 auto',
     textAlign: 'center',
@@ -44,21 +43,27 @@ class Login extends React.Component {
     });
   }
 
+  handleLogin() {
+    this.props.onLoginClick(this.state.username, this.state.password);
+  }
+
   render() {
     return (
       <Paper style={styles.loginPaper} zDepth={1}>
-        <TextField
+        <TextField // TODO: Use form so enter works
           style={styles.loginTextFields}
           onChange={this.updateUsername.bind(this)}
+          errorText={this.props.loginFailed ? 'Username or password does not match' : ''}
           floatingLabelText='Username' />
         <TextField
           style={styles.loginTextFields}
           onChange={this.updatePassword.bind(this)}
+          errorText={this.props.loginFailed ? 'Username or password does not match' : ''}
           floatingLabelText='Password'
           type='password' />
         <RaisedButton
           style={styles.loginButton}
-          onTouchTap={this.props.onLogin.bind(this)}
+          onTouchTap={this.handleLogin.bind(this)}
           label="Login"
           primary={true} />
       </Paper>
@@ -67,7 +72,9 @@ class Login extends React.Component {
 }
 
 Login.propTypes = {
-  onLogin: PropTypes.func
+  onLoginClick: PropTypes.func,
+  loginFailed: PropTypes.bool,
+  loginRedirect: PropTypes.string
 };
 
 export default Login;

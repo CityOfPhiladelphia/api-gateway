@@ -1,43 +1,31 @@
-import React from 'react';
+import { connect } from 'react-redux';
 
-import Login from '../components/Login';
+import { login } from '../actions'
+import LoginPage from '../components/LoginPage';
 
-const styles = {
-  logo: {
-    margin: '1em auto',
-    maxWidth: '200px',
-    display: 'block'
-  },
-  title: {
-    textAlign: 'center',
-    fontFamily: 'roboto'
-  }
-};
-
-class LoginContainer extends React.Component {
-  constructor(props) {
-    super(props);
-  }
-
-  handleLogin() {
-    // TODO: POST /session
-    // TODO: save csrf_token to localStorage or sessionStorage
-    // TODO: redirect to nextPathname
-    console.log(this)
-  }
-
-  render() {
-    return (
-      <div>
-        <img
-          src='/img/logo/city-of-philadelphia.svg'
-          alt='City of Philadelphia'
-          style={styles.logo} />
-        <h3 style={styles.title}>API Gateway</h3>
-        <Login onLogin={this.handleLogin} />
-      </div>
-    );
+const mapStateToProps = (state, ownProps) => {
+  console.log(state)
+  console.log(ownProps)
+  return {
+    loginFailed: state.login.failed,
+    loginRedirect: ownProps.location.state.nextPathname
   }
 }
 
-export default LoginContainer
+const mapDispatchToProps = (dispatch) => {
+  console.log(this)
+  console.log(arguments)
+  return {
+    onLoginClick: (username, password) => {
+      console.log(this)
+      dispatch(login(username, password))
+    }
+  }
+}
+
+const LoginContainer = connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(LoginPage)
+
+export default LoginContainer;

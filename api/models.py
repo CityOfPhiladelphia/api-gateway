@@ -3,7 +3,7 @@ import os
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.dialects.postgresql import CIDR
-from sqlalchemy import func, Index
+from sqlalchemy import func, Index, UniqueConstraint
 from sqlalchemy.orm import validates
 from flask_login import UserMixin
 from passlib.hash import argon2
@@ -147,3 +147,59 @@ class CIDRBlock(BaseMixin, db.Model):
     def validate_cidr(self, key, cidr):
         IPNetwork(cidr) # will raise an exception on an invalid network
         return cidr
+
+class RequestsAggregate(db.Model):
+    __tablename__ = 'requests_aggregates'
+
+    id = db.Column(db.BigInteger, primary_key=True)
+    key_id = db.Column(db.Integer, db.ForeignKey('keys.id'))
+    ip = db.Column(db.String(), nullable=False) ## TODO: inet ????
+    endpoint_name = db.Column(db.String()) ## TODO: !!! nullable?
+    minute = db.Column(db.DateTime(), nullable=False)
+    request_count = db.Column(db.BigInteger(), nullable=False)
+    sum_elapsed_time = db.Column(db.BigInteger(), nullable=False)
+    sum_bytes = db.Column(db.BigInteger(), nullable=False)
+    sum_2xx = db.Column(db.BigInteger(), nullable=False)
+    sum_3xx = db.Column(db.BigInteger(), nullable=False)
+    sum_4xx = db.Column(db.BigInteger(), nullable=False)
+    sum_429 = db.Column(db.BigInteger(), nullable=False)
+    sum_5xx = db.Column(db.BigInteger(), nullable=False)
+
+    __table_args__ = (
+        Index('uniq_request_agg_null',
+              ip,
+              endpoint_name,
+              minute,
+              unique=True,
+              postgresql_where=key_id == None),
+        Index('uniq_request_agg_not_null',
+              key_id,
+              ip,
+              endpoint_name,
+              minute,
+              unique=True,
+              postgresql_where=key_id != None),)
+
+
+    def __init__(self, **data):
+        self.key_id = data['key_id']
+        self.ip = data['ip']
+        self.endpoint_name = data['endpoint_name']
+        self.minute = data['minute']
+        self.request_count = data['request_count']
+        self.sum_elapsed_time = data['sum_elapsed_time']
+        self.sum_bytes = data['sum_bytes']
+        self.sum_2xx = data['sum_2xx']
+        self.sum_3xx = data['sum_3xx']
+        self.sum_4xx = data['sum_4xx']
+        self.sum_429 = data['sum_429']
+        self.sum_5xx = data['sum_5xx']
+
+    def __repr__(self):
+        return '<RequestsAggregate id: {} key_id: {} ip: {} endpoint_name: {} minute: {} request_count: {}>'.format(
+            self.id,
+            self.key_id,
+            self.ip,
+            self.endpoint_name,
+            self.minute,
+            self.request_count)

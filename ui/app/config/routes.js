@@ -11,6 +11,7 @@ import theme from '../styles/theme';
 import LoginContainer from '../containers/LoginContainer';
 import MainContainer from '../containers/MainContainer';
 import rootReducer from '../reducers';
+import { checkSession } from '../utils';
 
 const loggerMiddleware = createLogger()
 
@@ -22,15 +23,18 @@ const store = createStore(
   )
 );
 
-function requireAuth(nextState, replace) { // https://medium.com/@onclouds/react-js-react-router-redirect-after-login-412c83122c98
-  // TODO: GET /session to check?
-  // TODO: check for csrf_token in localStorage or sessionStorage ?
-  if (!SignInStorage.isSignedin()) {
-    replace({
-      pathname: '/signin',
-      state: { nextPathname: nextState.location.pathname }
-    });
-  }
+function requireAuth(nextState, replace, next) {
+  checkSession()
+  .then((validSession) => {
+    if (!validSession) {
+      replace({
+        pathname: '/login',
+        state: { nextPathname: nextState.location.pathname }
+      });
+      next();
+    } else
+      next();
+  });
 }
 
 var routes = (
@@ -38,7 +42,8 @@ var routes = (
     <MuiThemeProvider muiTheme={getMuiTheme(theme)}>
       <Router history={hashHistory}>
         <Route path='/login' component={LoginContainer} />
-        <Route path='/' component={MainContainer}> // onEnter={requireAuth}
+        <Route path='/' component={MainContainer} onEnter={requireAuth}>
+          <Route path='/dashboard' />
         </Route>
       </Router>
     </MuiThemeProvider>

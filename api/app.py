@@ -4,6 +4,7 @@ import flask
 from flask.sessions import SecureCookieSessionInterface
 from flask_restful import Resource, Api
 from flask_login import LoginManager, AnonymousUserMixin, current_user
+from flask_cors import CORS
 
 from models import db, User
 import resources
@@ -23,6 +24,7 @@ GATEWAY_KEY = os.getenv('GATEWAY_KEY', None)
 
 db.init_app(app)
 api = Api(app)
+CORS(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)

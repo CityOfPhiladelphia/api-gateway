@@ -138,6 +138,10 @@ class SessionResource(Resource):
 
         return response_body
 
+    @login_required
+    def get(self):
+        return None, 204
+
     def delete(self):
         logout_user()
 
