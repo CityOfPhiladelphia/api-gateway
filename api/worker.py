@@ -3,13 +3,56 @@ import json
 from functools import reduce
 from itertools import groupby
 from datetime import datetime
+import sys
 
 import boto3
 import arrow
+from sqlalchemy import create_engine
+
+from models import db, RequestsAggregate
 
 sqs_queue_url = os.getenv('SQS_QUEUE_URL')
+db_connection_string = os.getenv('SQLALCHEMY_DATABASE_URI')
 
-sqs = boto3.resource('sqs')
+sqs = boto3.client('sqs')
+
+upsert_sql = '''
+INSERT INTO requests_aggregates (key_id,
+                                 ip,
+                                 endpoint_name,
+                                 minute,
+                                 request_count,
+                                 sum_elapsed_time,
+                                 sum_bytes,
+                                 sum_2xx,
+                                 sum_3xx,
+                                 sum_4xx,
+                                 sum_429,
+                                 sum_5xx)
+VALUES
+(%(key_id)s,
+ %(ip)s,
+ %(endpoint_name)s,
+ %(minute)s,
+ %(request_count)s,
+ %(sum_elapsed_time)s,
+ %(sum_bytes)s,
+ %(sum_2xx)s,
+ %(sum_3xx)s,
+ %(sum_4xx)s,
+ %(sum_429)s,
+ %(sum_5xx)s)
+ON CONFLICT ((COALESCE(key_id, -1)), ip, (COALESCE(endpoint_name, '&&--')), minute)
+DO UPDATE
+SET request_count = requests_aggregates.request_count + %(request_count)s,
+    sum_elapsed_time = requests_aggregates.sum_elapsed_time + %(sum_elapsed_time)s,
+    sum_bytes = requests_aggregates.sum_bytes + %(sum_bytes)s,
+    sum_2xx = requests_aggregates.sum_2xx + %(sum_2xx)s,
+    sum_3xx = requests_aggregates.sum_3xx + %(sum_3xx)s,
+    sum_4xx = requests_aggregates.sum_4xx + %(sum_4xx)s,
+    sum_429 = requests_aggregates.sum_429 + %(sum_429)s,
+    sum_5xx = requests_aggregates.sum_5xx + %(sum_5xx)s;
+'''
 
 def get_aggrate_group_key(request):
     return (request['token_id'], request['user_ip'], request['endpoint_name'],)
@@ -20,11 +63,11 @@ def get_request_minute(request):
 def aggregate_requests(messages):
     requests = map(lambda x: json.loads(x['Body']), messages)
     for key, groups in groupby(requests, get_aggrate_group_key):
-        for minute, grouped_by_minute in groupby(grouped_by_user, get_request_minute)
+        for minute, grouped_by_minute in groupby(groups, get_request_minute):
             aggregate = {
                 'key_id': key[0],
                 'ip': key[1],
-                'endpoint_name': key[2]
+                'endpoint_name': key[2],
                 'minute': minute,
                 'request_count': 0,
                 'sum_elapsed_time': 0,
@@ -39,7 +82,7 @@ def aggregate_requests(messages):
             for request in grouped_by_minute:
                 aggregate['request_count'] += 1
                 aggregate['sum_elapsed_time'] += request['elapsed_time']
-                aggregate['sum_bytes'] += request['content_length']
+                aggregate['sum_bytes'] += request['content_length'] or 0
 
                 status = request['status_code']
                 if 200 <= status < 300:
@@ -55,14 +98,22 @@ def aggregate_requests(messages):
 
             yield aggregate
 
-def upsert_aggregates():
 
-while True:
-    response = sqs.receive_message(
-        QueueUrl=sqs_queue_url,
-        MaxNumberOfMessages=10,
-        WaitTimeSeconds=20
-    )
+response = sqs.receive_message(
+    QueueUrl=sqs_queue_url,
+    MaxNumberOfMessages=10,
+    WaitTimeSeconds=20
+)
 
-    if len(response['Messages']) == 0:
-        continue
+if len(response['Messages']) == 0:
+    sys.exit(0)
+
+engine = create_engine(db_connection_string)
+conn = engine.raw_connection()
+
+with conn.cursor() as cur:
+    for aggregate in aggregate_requests(response['Messages']):
+        print(aggregate)
+        cur.execute(upsert_sql, aggregate)
+
+conn.close()

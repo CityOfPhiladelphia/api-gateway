@@ -24,6 +24,10 @@ services:
       - GATEWAY_CONFIG_PATH=/usr/src/config/config.yml
       - GATEWAY_API_BASE_URL=http://api:5000
       - GATEWAY_KEY=4juA6l748gdJ7jN5112p2m0710lbkR4u
+      - SQS_QUEUE_URL=https://sqs.us-east-1.amazonaws.com/676612114792/api-gateway-test
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
   api:
     build: ./api
     depends_on:
@@ -38,3 +42,7 @@ services:
       - FLASK_SESSION_SECRET_KEY=1147C294BE7F41FF866D1457F4638
       - CSRF_SECRET=A467489B85F44B7B3582671278CCF
       - GATEWAY_KEY=4juA6l748gdJ7jN5112p2m0710lbkR4u
+      - SQS_QUEUE_URL=https://sqs.us-east-1.amazonaws.com/676612114792/api-gateway-test
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}

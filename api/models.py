@@ -2,7 +2,7 @@ import binascii
 import os
 
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.dialects.postgresql import CIDR
+from sqlalchemy.dialects.postgresql import CIDR, INET
 from sqlalchemy import func, Index, UniqueConstraint
 from sqlalchemy.orm import validates
 from flask_login import UserMixin
@@ -153,11 +153,11 @@ class RequestsAggregate(db.Model):
 
     id = db.Column(db.BigInteger, primary_key=True)
     key_id = db.Column(db.Integer, db.ForeignKey('keys.id'))
-    ip = db.Column(db.String(), nullable=False) ## TODO: inet ????
-    endpoint_name = db.Column(db.String()) ## TODO: !!! nullable?
+    ip = db.Column(INET, nullable=False)
+    endpoint_name = db.Column(db.String())
     minute = db.Column(db.DateTime(), nullable=False)
     request_count = db.Column(db.BigInteger(), nullable=False)
-    sum_elapsed_time = db.Column(db.BigInteger(), nullable=False)
+    sum_elapsed_time = db.Column(db.BigInteger(), nullable=False) 
     sum_bytes = db.Column(db.BigInteger(), nullable=False)
     sum_2xx = db.Column(db.BigInteger(), nullable=False)
     sum_3xx = db.Column(db.BigInteger(), nullable=False)
@@ -166,19 +166,12 @@ class RequestsAggregate(db.Model):
     sum_5xx = db.Column(db.BigInteger(), nullable=False)
 
     __table_args__ = (
-        Index('uniq_request_agg_null',
+        Index('uniq_request_agg',
+              func.coalesce(key_id, -1),
               ip,
-              endpoint_name,
+              func.coalesce(endpoint_name, '&&--'),
               minute,
-              unique=True,
-              postgresql_where=key_id == None),
-        Index('uniq_request_agg_not_null',
-              key_id,
-              ip,
-              endpoint_name,
-              minute,
-              unique=True,
-              postgresql_where=key_id != None),)
+              unique=True),)
 
 
     def __init__(self, **data):
