@@ -49,9 +49,6 @@ function errorReq(req, res, err) {
 http.createServer(function(req, res) {
   // TODO: try/catch with 500?
 
-  // TODO: header injections? - like CORS
-  // TODO: timeout settings?
-
   req.startTime = new Date();
   req.userIP = utils.getUserIp(req);
 
@@ -88,6 +85,7 @@ http.createServer(function(req, res) {
     });
   });
 })
+.setTimeout(utils.GATEWAY_TIMEOUT)
 .listen(process.env.GATEWAY_HTTP_PORT || 8080, function () {
   utils.logger.info('Gateway up...');
 });
