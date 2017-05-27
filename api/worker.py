@@ -3,13 +3,11 @@ import json
 from functools import reduce
 from itertools import groupby
 from datetime import datetime
-import sys
 
 import boto3
 import arrow
+import click
 from sqlalchemy import create_engine
-
-from models import db, RequestsAggregate
 
 sqs_queue_url = os.getenv('SQS_QUEUE_URL')
 db_connection_string = os.getenv('SQLALCHEMY_DATABASE_URI')
@@ -98,22 +96,64 @@ def aggregate_requests(messages):
 
             yield aggregate
 
+def get_messages(total_count=0, max_total=100, wait_time_seconds=20, max_messages_per_call=10):
+    response = sqs.receive_message(
+        QueueUrl=sqs_queue_url,
+        MaxNumberOfMessages=max_messages_per_call,
+        WaitTimeSeconds=wait_time_seconds
+    )
 
-response = sqs.receive_message(
-    QueueUrl=sqs_queue_url,
-    MaxNumberOfMessages=10,
-    WaitTimeSeconds=20
-)
+    if 'Messages' not in response:
+        return []
 
-if len(response['Messages']) == 0:
-    sys.exit(0)
+    num_messages = len(response['Messages'])
+    total_count += num_messages
 
-engine = create_engine(db_connection_string)
-conn = engine.raw_connection()
+    if num_messages == max_messages_per_call and total_count < max_total:
+        return response['Messages'] + get_messages(total_count=total_count,
+                                                   max_total=max_total,
+                                                   wait_time_seconds=0,
+                                                   max_messages_per_call=max_messages_per_call)
 
-with conn.cursor() as cur:
-    for aggregate in aggregate_requests(response['Messages']):
-        print(aggregate)
-        cur.execute(upsert_sql, aggregate)
+    return response['Messages']
 
-conn.close()
+def batch(iterable, n=1):
+    l = len(iterable)
+    for ndx in range(0, l, n):
+        yield iterable[ndx:min(ndx + n, l)]
+
+def get_delete_handle(message):
+    return {
+        'Id': message['MessageId'],
+        'ReceiptHandle': message['ReceiptHandle']
+    }
+
+def delete_messages(messages):
+    for message_batch in batch(messages, 10):
+        sqs.delete_message_batch(
+            QueueUrl=sqs_queue_url,
+            Entries=list(map(get_delete_handle, message_batch)))
+
+@click.command()
+def main():
+    engine = create_engine(db_connection_string) ## creates connection pool
+
+    while True:
+        messages = get_messages()
+
+        if len(messages) == 0:
+            continue
+
+        conn = engine.raw_connection()
+
+        with conn.cursor() as cur:
+            for aggregate in aggregate_requests(messages):
+                print(aggregate)
+                cur.execute(upsert_sql, aggregate)
+
+        conn.close() ## returns connection to pool
+
+        delete_messages(messages)
+
+if __name__ == '__main__':
+    main()
