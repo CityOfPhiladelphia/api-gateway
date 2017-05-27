@@ -81,8 +81,6 @@ class Key(BaseMixin, db.Model):
     contact_email = db.Column(db.String)
     expires_at = db.Column(db.DateTime)
 
-    ## TODO: add columns for custom rate limit
-
     def __init__(self, **data):
         self.active = data.get('active')
         self.owner_name = data.get('owner_name')

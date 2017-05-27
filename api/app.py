@@ -15,9 +15,10 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI')
 app.config['SESSION_COOKIE_NAME'] = 'gatewaysession'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = int(os.getenv('FLASK_PERMANENT_SESSION_LIFETIME', 43200))
 app.config['SESSION_COOKIE_DOMAIN'] = os.getenv('FLASK_SESSION_DOMAIN', None)
 app.config['SESSION_COOKIE_SECURE'] = os.getenv('FLASK_SESSION_SECURE', False)
-app.secret_key = os.getenv('FLASK_SESSION_SECRET_KEY')
+app.config['SECRET_KEY'] = os.getenv('FLASK_SESSION_SECRET_KEY')
 
 # secret to identify gateway API requests
 GATEWAY_KEY = os.getenv('GATEWAY_KEY', None)
@@ -67,7 +68,6 @@ class CustomSessionInterface(SecureCookieSessionInterface):
 
 app.session_interface = CustomSessionInterface()
 
-## TODO: session expiration?
 ## TODO: store both v4 and v6 versions of IPs in cidr list?
 
 with app.app_context():
