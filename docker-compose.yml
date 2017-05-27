@@ -46,3 +46,16 @@ services:
       - AWS_DEFAULT_REGION=us-east-1
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+  analytics_worker:
+    build: ./api
+    depends_on:
+      - postgres
+    volumes:
+      - ./api:/app
+    command: worker.py
+    environment:
+      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://app:password@postgres/api_gateway
+      - SQS_QUEUE_URL=https://sqs.us-east-1.amazonaws.com/676612114792/api-gateway-test
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}

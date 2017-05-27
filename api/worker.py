@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 from functools import reduce
 from itertools import groupby
 from datetime import datetime
@@ -8,6 +9,10 @@ import boto3
 import arrow
 import click
 from sqlalchemy import create_engine
+
+FORMAT = '[%(asctime)-15s] %(levelname)s [%(name)s] %(message)s'
+logging.basicConfig(format=FORMAT, level=logging.INFO)
+logger = logging.getLogger('analytics_worker')
 
 sqs_queue_url = os.getenv('SQS_QUEUE_URL')
 db_connection_string = os.getenv('SQLALCHEMY_DATABASE_URI')
@@ -136,7 +141,10 @@ def delete_messages(messages):
 
 @click.command()
 def main():
+    print('pofedfopko')
     engine = create_engine(db_connection_string) ## creates connection pool
+
+    logger.info('Analytics worker up...')
 
     while True:
         messages = get_messages()
@@ -148,7 +156,6 @@ def main():
 
         with conn.cursor() as cur:
             for aggregate in aggregate_requests(messages):
-                print(aggregate)
                 cur.execute(upsert_sql, aggregate)
 
         conn.close() ## returns connection to pool
