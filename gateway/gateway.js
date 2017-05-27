@@ -54,6 +54,9 @@ http.createServer(function(req, res) {
   req.startTime = new Date();
   req.userIP = utils.getUserIp(req);
 
+  if (!req.userIP)
+    return utils.abort(req, res, 500, { message: 'Internal Server Error' });
+
   bans.checkBan(req, res, function (err) {
     if (err) return errorReq(req, res, err);
 
