@@ -68,8 +68,6 @@ class CustomSessionInterface(SecureCookieSessionInterface):
 
 app.session_interface = CustomSessionInterface()
 
-## TODO: store both v4 and v6 versions of IPs in cidr list?
-
 with app.app_context():
     db.create_all() ## TODO: move to separate migration script? like https://realpython.com/blog/python/flask-by-example-part-2-postgres-sqlalchemy-and-alembic/
 

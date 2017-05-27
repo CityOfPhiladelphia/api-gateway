@@ -6,13 +6,13 @@ const httpProxy = require('http-proxy'),
       redis = require('redis'),
       uuid = require('node-uuid');
 
-const authentication = require('./lib/authentication'),
-      bans = require('./lib/bans'),
-      rateLimiting = require('./lib/rateLimiting'),
-      utils = require('./lib/utils');
+const authentication = require('./src/authentication'),
+      bans = require('./src/bans'),
+      rateLimiting = require('./src/rateLimiting'),
+      utils = require('./src/utils');
 
 const redisclient = redis.createClient({
-  url: process.env.GATEWAY_REDIS_URL || 'redis://127.0.0.1:6379'
+  url: utils.GATEWAY_REDIS_URL
 });
 
 const config = utils.getConfig();
@@ -50,6 +50,7 @@ http.createServer(function(req, res) {
   // TODO: try/catch with 500?
 
   // TODO: header injections? - like CORS
+  // TODO: timeout settings?
 
   req.startTime = new Date();
   req.userIP = utils.getUserIp(req);
