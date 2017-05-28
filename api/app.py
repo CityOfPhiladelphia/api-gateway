@@ -25,7 +25,7 @@ GATEWAY_KEY = os.getenv('GATEWAY_KEY', None)
 
 db.init_app(app)
 api = Api(app)
-CORS(app)
+CORS(app, supports_credentials=True)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -70,6 +70,9 @@ app.session_interface = CustomSessionInterface()
 
 with app.app_context():
     db.create_all() ## TODO: move to separate migration script? like https://realpython.com/blog/python/flask-by-example-part-2-postgres-sqlalchemy-and-alembic/
+
+    ## TODO: analytics reporting resource(s)
+    ## TODO: endpoints resource - will need to load config file
 
     api.add_resource(resources.UserListResource, '/users')
     api.add_resource(resources.UserResource, '/users/<int:instance_id>')

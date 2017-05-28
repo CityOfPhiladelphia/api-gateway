@@ -26,7 +26,14 @@ const loginFailed = () => {
   }
 }
 
-export const login = (username, password) => {
+const redirect = (redirectPath) => {
+  return {
+    type: types.REDIRECT,
+    redirectPath: redirectPath
+  }
+}
+
+export const login = (loginRedirect, username, password) => {
   return (dispatch) => {
     // TODO: dispatch(loading())
     return api.post('/session', {
@@ -35,9 +42,9 @@ export const login = (username, password) => {
     })
     .then((res) => {
       if (res.status == 200) {
-        localStorage.setItem('csrf_token', res.data.csrf_token);
-        dispatch(loginSucess())
-
+        window.localStorage.setItem('csrf_token', res.data.csrf_token);
+        dispatch(loginSuccess())
+        dispatch(redirect(loginRedirect))
       } else if (res.status == 401 || res.status == 400)
         dispatch(loginFailed())
       else

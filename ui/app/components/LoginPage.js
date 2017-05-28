@@ -29,7 +29,7 @@ class LoginPage extends React.Component {
           style={styles.logo} />
         <h3 style={styles.title}>API Gateway</h3>
         <Login
-          onLoginClick={this.props.onLoginClick}
+          onLoginClick={this.props.onLoginClick.bind(null, this.props.loginRedirect)}
           loginFailed={this.props.loginFailed} />
       </div>
     );
@@ -39,7 +39,7 @@ class LoginPage extends React.Component {
 LoginPage.propTypes = {
   onLoginClick: PropTypes.func,
   loginFailed: PropTypes.bool,
-  loginRedirect: PropTypes.string
+  loginRedirect: PropTypes.object
 };
 
 export default LoginPage;

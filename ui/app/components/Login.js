@@ -43,29 +43,32 @@ class Login extends React.Component {
     });
   }
 
-  handleLogin() {
+  handleLogin(e) {
+    e.preventDefault();
     this.props.onLoginClick(this.state.username, this.state.password);
   }
 
   render() {
     return (
       <Paper style={styles.loginPaper} zDepth={1}>
-        <TextField // TODO: Use form so enter works
-          style={styles.loginTextFields}
-          onChange={this.updateUsername.bind(this)}
-          errorText={this.props.loginFailed ? 'Username or password does not match' : ''}
-          floatingLabelText='Username' />
-        <TextField
-          style={styles.loginTextFields}
-          onChange={this.updatePassword.bind(this)}
-          errorText={this.props.loginFailed ? 'Username or password does not match' : ''}
-          floatingLabelText='Password'
-          type='password' />
-        <RaisedButton
-          style={styles.loginButton}
-          onTouchTap={this.handleLogin.bind(this)}
-          label="Login"
-          primary={true} />
+        <form onSubmit={this.handleLogin.bind(this)}>
+          <TextField
+            style={styles.loginTextFields}
+            onChange={this.updateUsername.bind(this)}
+            errorText={this.props.loginFailed ? 'Username or password does not match' : ''}
+            floatingLabelText='Username' />
+          <TextField
+            style={styles.loginTextFields}
+            onChange={this.updatePassword.bind(this)}
+            errorText={this.props.loginFailed ? 'Username or password does not match' : ''}
+            floatingLabelText='Password'
+            type='password' />
+          <RaisedButton
+            style={styles.loginButton}
+            type="submit"
+            label="Login"
+            primary={true} />
+        </form>
       </Paper>
     );
   }
@@ -73,8 +76,7 @@ class Login extends React.Component {
 
 Login.propTypes = {
   onLoginClick: PropTypes.func,
-  loginFailed: PropTypes.bool,
-  loginRedirect: PropTypes.string
+  loginFailed: PropTypes.bool
 };
 
 export default Login;

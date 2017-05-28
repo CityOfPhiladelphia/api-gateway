@@ -12,14 +12,22 @@ import LoginContainer from '../containers/LoginContainer';
 import MainContainer from '../containers/MainContainer';
 import rootReducer from '../reducers';
 import { checkSession } from '../utils';
+import * as types from '../actions/types';
 
 const loggerMiddleware = createLogger()
+
+const redirectMiddleware = store => next => action => {
+  if (action.type == types.REDIRECT)
+    return hashHistory.replace(action.redirect || { pathname: '/' });
+  next(action);
+}
 
 const store = createStore(
   rootReducer,
   applyMiddleware(
     thunkMiddleware, // lets us dispatch() functions
-    loggerMiddleware // neat middleware that logs actions
+    loggerMiddleware, // neat middleware that logs actions
+    redirectMiddleware
   )
 );
 
@@ -29,7 +37,7 @@ function requireAuth(nextState, replace, next) {
     if (!validSession) {
       replace({
         pathname: '/login',
-        state: { nextPathname: nextState.location.pathname }
+        state: { nextPathname: nextState.location }
       });
       next();
     } else
