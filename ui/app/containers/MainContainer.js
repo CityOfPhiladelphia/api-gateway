@@ -1,19 +1,14 @@
 import React from 'react';
-import {List, ListItem} from 'material-ui/List';
 import ActionAccountCircle from 'material-ui/svg-icons/action/account-circle';
 import AppBar from 'material-ui/AppBar';
 import Drawer from 'material-ui/Drawer';
-import RightBar from 'material-ui/svg-icons/content/inbox';
+import Dashboard from 'material-ui/svg-icons/action/dashboard';
+import VpnKey from 'material-ui/svg-icons/communication/vpn-key';
+import Security from 'material-ui/svg-icons/hardware/security';
 import IconButton from 'material-ui/IconButton';
 import IconMenu from 'material-ui/IconMenu';
 import MenuItem from 'material-ui/MenuItem';
-import FlatButton from 'material-ui/FlatButton';
-import Toggle from 'material-ui/Toggle';
-import MoreVertIcon from 'material-ui/svg-icons/navigation/more-vert';
-import NavigationClose from 'material-ui/svg-icons/navigation/close';
-import classnames from 'classnames';
-
-import SideNavContainer from './SideNavContainer'
+import Divider from 'material-ui/Divider';
 
 const UserAppBar = (props) => (
   <IconMenu
@@ -35,7 +30,7 @@ export default class Main extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      open: true,
+      open: false,
       logged: false
     };
   }
@@ -48,14 +43,12 @@ export default class Main extends React.Component {
     return (
       <div>
         <AppBar
-          className={classnames('app-bar', {'expanded': this.state.open})}
           onLeftIconButtonTouchTap={this.handleToggle.bind(this)}
           iconElementRight={<UserAppBar />} />
         <Drawer
-          docked={true}
+          docked={false}
           open={this.state.open}
-          zDepth={1}
-          onRequestChange={(open) => this.setState({open})}>
+          onRequestChange={this.handleToggle.bind(this)}>
           <img
             src='/img/logo/city-of-philadelphia.svg'
             alt='City of Philadelphia'
@@ -64,11 +57,12 @@ export default class Main extends React.Component {
               maxWidth: '200px',
               display: 'block'}} />
           <h3 style={{textAlign: 'center'}}>API Gateway</h3>
-          <SideNavContainer />
+          <Divider />
+          <MenuItem leftIcon={<Dashboard />} primaryText='Dashboard' />
+          <MenuItem leftIcon={<VpnKey />} primaryText='API Keys' />
+          <MenuItem leftIcon={<Security/>} primaryText='Bans' />
         </Drawer>
-        <div className={classnames('app-content', {'expanded': this.state.open})}>
-          { this.props.children }
-        </div>
+        { this.props.children }
       </div>
     );
   }
