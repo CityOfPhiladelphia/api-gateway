@@ -6,8 +6,16 @@ const utils = require('./utils');
 
 function checkKey(key, callback) {
   request(
-    utils.GATEWAY_API_BASE_URL + '/keys?key=' + key,
-    { auth: { bearer: utils.GATEWAY_API_TOKEN } },
+    utils.GATEWAY_API_BASE_URL + '/keys',
+    {
+      auth: {
+        bearer: utils.GATEWAY_API_TOKEN
+      },
+      qs: {
+        key: key,
+        active: true
+      }
+    },
     function (err, res, body) {
       if (err) return callback(err);
 

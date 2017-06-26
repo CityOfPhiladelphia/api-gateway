@@ -8,6 +8,7 @@ import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import getMuiTheme from 'material-ui/styles/getMuiTheme';
 
 import theme from '../styles/theme';
+import ListKeysContainer from '../containers/ListKeysContainer';
 import LoginContainer from '../containers/LoginContainer';
 import MainContainer from '../containers/MainContainer';
 import rootReducer from '../reducers';
@@ -52,6 +53,7 @@ var routes = (
         <Route path='/login' component={LoginContainer} />
         <Route path='/' component={MainContainer} onEnter={requireAuth}>
           <Route path='/dashboard' />
+          <Route path='/keys' component={ListKeysContainer} />
         </Route>
       </Router>
     </MuiThemeProvider>

@@ -5,9 +5,10 @@ from flask.sessions import SecureCookieSessionInterface
 from flask_restful import Resource, Api
 from flask_login import LoginManager, AnonymousUserMixin, current_user
 from flask_cors import CORS
+from restful_ben.auth import SessionResource
 
-from models import db, User
-import resources
+from api_gateway.models import db, User
+from api_gateway import resources
 
 app = flask.Flask(__name__)
 app.config['DEBUG'] = os.getenv('DEBUG', False)
@@ -51,6 +52,8 @@ class GatewayUser(AnonymousUserMixin):
 
 @login_manager.request_loader
 def load_user_from_request(request):
+    if GATEWAY_KEY == None:
+        return None
     api_key = request.headers.get('Authorization')
     if api_key:
         api_key = api_key.replace('Bearer ', '', 1)
@@ -68,15 +71,18 @@ class CustomSessionInterface(SecureCookieSessionInterface):
 
 app.session_interface = CustomSessionInterface()
 
-with app.app_context():
-    db.create_all() ## TODO: move to separate migration script? like https://realpython.com/blog/python/flask-by-example-part-2-postgres-sqlalchemy-and-alembic/
+class LocalSessionResource(SessionResource):
+    User = User
+    session = db.session
+    csrf = resources.csrf
 
+with app.app_context():
     ## TODO: analytics reporting resource(s)
     ## TODO: endpoints resource - will need to load config file
 
     api.add_resource(resources.UserListResource, '/users')
     api.add_resource(resources.UserResource, '/users/<int:instance_id>')
-    api.add_resource(resources.SessionResource, '/session')
+    api.add_resource(LocalSessionResource, '/session')
     api.add_resource(resources.BanListResource, '/bans')
     api.add_resource(resources.BanResource, '/bans/<int:instance_id>')
     api.add_resource(resources.CIDRBlockListResource, '/bans/cidr-blocks')

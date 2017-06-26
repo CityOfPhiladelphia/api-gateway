@@ -8,6 +8,7 @@ from sqlalchemy.orm import validates
 from flask_login import UserMixin
 from passlib.hash import argon2
 from netaddr import IPNetwork
+from restful_ben.auth import UserAuthMixin
 
 db = SQLAlchemy()
 
@@ -21,14 +22,12 @@ class BaseMixin(object):
                            server_default=func.now(),
                            onupdate=func.now())
 
-class User(UserMixin, BaseMixin, db.Model):
+class User(UserAuthMixin, UserMixin, BaseMixin, db.Model):
     __tablename__ = 'users'
 
     active = db.Column(db.Boolean, nullable=False)
-    username = db.Column(db.String, index=True, nullable=False)
     email = db.Column(db.String)
     role = db.Column(db.Enum('normal','admin', name='user_roles'), nullable=False)
-    hashed_password = db.Column(db.String)
 
     @property
     def is_active(self):
@@ -37,26 +36,6 @@ class User(UserMixin, BaseMixin, db.Model):
     @property
     def is_admin(self):
         return self.role == 'admin'
-
-    @property
-    def password(self):
-        raise Exception('Cannot get password from User.')
-
-    def get_password_hash(self, password):
-        return argon2.using(rounds=4).hash(password)
-
-    @password.setter
-    def password(self, password):
-        if password is None:
-            self.hashed_password = None
-        else:
-            self.hashed_password = self.get_password_hash(password)
-
-    def verify_password(self, input_password):
-        if not self.hashed_password or not input_password:
-            return False
-
-        return argon2.verify(input_password, self.hashed_password)
 
     def __init__(self, **data):
         self.active = data.get('active')
@@ -74,19 +53,17 @@ class User(UserMixin, BaseMixin, db.Model):
 class Key(BaseMixin, db.Model):
     __tablename__ = 'keys'
 
-    key = db.Column(db.String, index=True)
-    active = db.Column(db.Boolean, nullable=False)
+    key = db.Column(db.String, unique=True)
+    active = db.Column(db.Boolean, index=True, nullable=False)
     owner_name = db.Column(db.String)
     contact_name = db.Column(db.String)
     contact_email = db.Column(db.String)
-    expires_at = db.Column(db.DateTime)
 
     def __init__(self, **data):
         self.active = data.get('active')
         self.owner_name = data.get('owner_name')
         self.contact_name = data.get('contact_name')
         self.contact_email = data.get('contact_email')
-        self.expires_at = data.get('expires_at')
 
         self.key = binascii.hexlify(os.urandom(32)).decode('utf-8')
 
@@ -98,7 +75,6 @@ class Key(BaseMixin, db.Model):
 class Ban(BaseMixin, db.Model):
     __tablename__ = 'bans'
 
-    active = db.Column(db.Boolean, nullable=False)
     title = db.Column(db.String)
     description = db.Column(db.String)
     cidr_blocks = db.relationship('CIDRBlock',
@@ -107,13 +83,10 @@ class Ban(BaseMixin, db.Model):
                                   # ,
                                   # lazy='joined'
                                   )
-    expires_at = db.Column(db.DateTime)
 
     def __init__(self, **data):
-        self.active = data.get('active')
         self.title = data.get('title')
         self.description = data.get('description')
-        self.expires_at = data.get('expires_at')
 
         cidr_blocks = data.get('cidr_blocks', [])
 
@@ -121,10 +94,9 @@ class Ban(BaseMixin, db.Model):
             self.cidr_blocks.append(block)
 
     def __repr__(self):
-        return '<Ban id: {} cidr: {} active: {} expires_at: {}>'.format(self.id, \
-                                                                        self.active, \
-                                                                        self.title, \
-                                                                        self.expires_at)
+        return '<Ban id: {} cidr: {} active: {}>'.format(self.id, \
+                                                         self.active, \
+                                                         self.title)
 
 class CIDRBlock(BaseMixin, db.Model):
     __tablename__ = 'cidr_blocks'

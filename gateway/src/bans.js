@@ -19,8 +19,15 @@ var banCache = cacheManager.multiCaching([memoryCache]);
 
 function fetchBan(ip, callback) {
   request(
-    utils.GATEWAY_API_BASE_URL + '/bans/cidr-blocks?cidr__contains=' + ip,
-    { auth: { bearer: utils.GATEWAY_API_TOKEN } },
+    utils.GATEWAY_API_BASE_URL + '/bans/cidr-blocks',
+    {
+      auth: {
+        bearer: utils.GATEWAY_API_TOKEN
+      },
+      qs: {
+        cidr__contains: ip
+      }
+    },
     function (err, banRes, body) {
       if (err) return callback(err);
 

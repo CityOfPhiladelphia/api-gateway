@@ -10,44 +10,17 @@ from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy.dialects.postgresql import CIDR
 from netaddr import IPNetwork
 from itsdangerous import URLSafeSerializer
+from restful_ben.resources import (
+    BaseResource,
+    RetrieveUpdateDeleteResource,
+    QueryEngineMixin,
+    CreateListResource
+)
+from restful_ben.auth import authorization, CSRF
 
-from models import db, Ban, CIDRBlock, Key, User
-from restful import RetrieveUpdateDeleteResource, CreateListResource, QueryEngineMixin, BaseResource
+from api_gateway.models import db, Ban, CIDRBlock, Key, User
 
-CSRF_SECRET = os.getenv('CSRF_SECRET', None)
-csrf_signer = URLSafeSerializer(CSRF_SECRET)
-
-def authorization(roles_permissions):
-    def authorization_decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            if hasattr(current_user, 'role'):
-                role = current_user.role
-            else:
-                role = None
-
-            if role and role in roles_permissions:
-                if request.method in roles_permissions[role]:
-                    return func(*args, **kwargs)
-
-            abort(403)
-        return wrapper
-    return authorization_decorator
-
-def csrf_check(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        if request.method in ['GET','HEAD','OPTIONS'] or current_user.role == 'gateway':
-            return func(*args, **kwargs)
-
-        ## check for X-CSRF header and check signature
-        try:
-            csrf_signer.loads(request.headers['X-CSRF'])
-        except:
-            abort(401)
-
-        return func(*args, **kwargs)
-    return wrapper
+csrf = CSRF()
 
 ## Users
 
@@ -88,64 +61,20 @@ def user_authorization(func):
     return wrapper
 
 class UserResource(RetrieveUpdateDeleteResource):
-    method_decorators = [csrf_check, user_authorization, login_required]
+    method_decorators = [csrf.csrf_check, user_authorization, login_required]
 
     single_schema = user_schema
     model = User
     session = db.session
 
 class UserListResource(QueryEngineMixin, CreateListResource):
-    method_decorators = [csrf_check, user_authorization, login_required]
+    method_decorators = [csrf.csrf_check, user_authorization, login_required]
 
     query_engine_exclude_fields = ['hashed_password', 'password']
     single_schema = user_schema
     many_schema = users_schema
     model = User
     session = db.session
-
-## Sessions
-
-class SessionSchema(Schema):
-    username = fields.Str(required=True)
-    password = fields.Str(required=True)
-
-session_schema = SessionSchema()
-
-class SessionResource(Resource):
-    def post(self):
-        raw_body = request.json
-        session_load = session_schema.load(raw_body)
-
-        if session_load.errors:
-            abort(400, errors=session_load.errors)
-
-        session = session_load.data
-
-        user = db.session.query(User).filter(User.username == session['username']).first()
-
-        if not user:
-            abort(401, errors=['Not Authorized'])
-
-        password_matches = user.verify_password(session['password'])
-        if not password_matches:
-            abort(401, errors=['Not Authorized'])
-
-        login_user(user)
-
-        response_body = {
-            'csrf_token': csrf_signer.dumps(binascii.hexlify(os.urandom(32)).decode('utf-8'))
-        }
-
-        return response_body
-
-    @login_required
-    def get(self):
-        return None, 204
-
-    def delete(self):
-        logout_user()
-
-        return None, 204
 
 ## CIDR Blocks
 
@@ -176,14 +105,14 @@ cidr_block_authorization = authorization({
 })
 
 class CIDRBlockResource(RetrieveUpdateDeleteResource):
-    method_decorators = [csrf_check, cidr_block_authorization, login_required]
+    method_decorators = [csrf.csrf_check, cidr_block_authorization, login_required]
     methods = ['GET','DELETE']
     single_schema = cidr_block_schema
     model = CIDRBlock
     session = db.session
 
 class CIDRBlockListResource(QueryEngineMixin, BaseResource):
-    method_decorators = [csrf_check, cidr_block_authorization, login_required]
+    method_decorators = [csrf.csrf_check, cidr_block_authorization, login_required]
     many_schema = cidr_blocks_schema
     model = CIDRBlock
     session = db.session
@@ -218,13 +147,13 @@ ban_authorization = authorization({
 })
 
 class BanResource(RetrieveUpdateDeleteResource):
-    method_decorators = [csrf_check, ban_authorization, login_required]
+    method_decorators = [csrf.csrf_check, ban_authorization, login_required]
     single_schema = ban_schema_put_get
     model = Ban
     session = db.session
 
 class BanListResource(QueryEngineMixin, CreateListResource):
-    method_decorators = [csrf_check, ban_authorization, login_required]
+    method_decorators = [csrf.csrf_check, ban_authorization, login_required]
     single_schema = ban_schema
     many_schema = bans_schema
     model = Ban
@@ -258,13 +187,13 @@ key_authorization = authorization({
 })
 
 class KeyResource(RetrieveUpdateDeleteResource):
-    method_decorators = [csrf_check, key_authorization, login_required]
+    method_decorators = [csrf.csrf_check, key_authorization, login_required]
     single_schema = key_schema
     model = Key
     session = db.session
 
-class KeyListResource(CreateListResource):
-    method_decorators = [csrf_check, key_authorization, login_required]
+class KeyListResource(QueryEngineMixin, CreateListResource):
+    method_decorators = [csrf.csrf_check, key_authorization, login_required]
     single_schema = key_create_schema
     many_schema = keys_schema
     model = Key
