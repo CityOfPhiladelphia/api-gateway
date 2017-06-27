@@ -31,6 +31,6 @@ def model_fixtures(app):
         db.session.add(key1)
         db.session.commit()
 
-        ban1 = Ban(active=True, title='foo', cidr_blocks=[CIDRBlock(cidr='10.0.0.0/16')])
+        ban1 = Ban(title='foo', cidr_blocks=[CIDRBlock(cidr='10.0.0.0/16')])
         db.session.add(ban1)
         db.session.commit()

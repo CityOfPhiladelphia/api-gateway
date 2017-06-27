@@ -106,3 +106,63 @@ def test_query_by_ip(app, model_fixtures):
         'updated_at': iso_regex,
         'created_at': iso_regex
     })
+
+def test_update_ban(app, model_fixtures):
+    test_client = app.test_client()
+    csrf_token =login(test_client)
+
+    response = json_call(test_client.get, '/bans/1')
+    assert response.status_code == 200
+    ban = response.json
+
+    ban['cidr_blocks'][0]['cidr'] = '10.3.0.0/16'
+
+    ban['cidr_blocks'].append({
+        'cidr': '10.1.0.0/16',
+    })
+
+    response = json_call(test_client.put, '/bans/1', ban, headers={'X-CSRF': csrf_token})
+    assert response.status_code == 200
+    assert dict_contains(response.json, {
+        'id': 1,
+        'title': 'foo',
+        'description': None,
+        'updated_at': iso_regex,
+        'created_at': iso_regex
+    })
+    assert len(response.json['cidr_blocks']) == 2
+    assert dict_contains(response.json['cidr_blocks'][0], {
+        'id': 1,
+        'ban': 1,
+        'cidr': '10.3.0.0/16',
+        'updated_at': iso_regex,
+        'created_at': iso_regex
+    })
+    assert dict_contains(response.json['cidr_blocks'][1], {
+        'id': 2,
+        'ban': 1,
+        'cidr': '10.1.0.0/16',
+        'updated_at': iso_regex,
+        'created_at': iso_regex
+    })
+
+def test_delete_ban(app, model_fixtures):
+    test_client = app.test_client()
+    csrf_token =login(test_client)
+
+    response = json_call(test_client.get, '/bans/1')
+    assert response.status_code == 200
+
+    response = json_call(test_client.get, '/bans/cidr-blocks?ban_id=1')
+    assert response.status_code == 200
+    assert response.json['count'] == 1
+
+    response = json_call(test_client.delete, '/bans/1', headers={'X-CSRF': csrf_token})
+    assert response.status_code == 204
+
+    response = json_call(test_client.get, '/bans/1')
+    assert response.status_code == 404
+
+    response = json_call(test_client.get, '/bans/cidr-blocks?ban_id=1')
+    assert response.status_code == 200
+    assert response.json['count'] == 0

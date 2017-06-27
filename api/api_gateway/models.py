@@ -79,6 +79,7 @@ class Ban(BaseMixin, db.Model):
     description = db.Column(db.String)
     cidr_blocks = db.relationship('CIDRBlock',
                                   backref='ban',
+                                  cascade='all, delete-orphan',
                                   passive_deletes=True # required to cascade deletes
                                   # ,
                                   # lazy='joined'
@@ -94,9 +95,7 @@ class Ban(BaseMixin, db.Model):
             self.cidr_blocks.append(block)
 
     def __repr__(self):
-        return '<Ban id: {} cidr: {} active: {}>'.format(self.id, \
-                                                         self.active, \
-                                                         self.title)
+        return '<Ban id: {} cidr: {}>'.format(self.id, self.title)
 
 class CIDRBlock(BaseMixin, db.Model):
     __tablename__ = 'cidr_blocks'
