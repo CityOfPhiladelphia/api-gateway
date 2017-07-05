@@ -3,9 +3,11 @@ import multiprocessing
 import click
 import gunicorn.app.base
 from gunicorn.six import iteritems
+from sqlalchemy import create_engine
 
 from api_gateway.app import app
 from api_gateway.worker import run_worker
+from api_gateway.models import db
 
 def number_of_workers():
     return (multiprocessing.cpu_count() * 2) + 1
@@ -29,6 +31,15 @@ class StandaloneApplication(gunicorn.app.base.BaseApplication):
 @click.group()
 def main():
     pass
+
+@main.command()
+@click.option('--sql-alchemy-connection')
+def init_db(sql_alchemy_connection):
+    connection_string = sql_alchemy_connection or os.getenv('SQL_ALCHEMY_CONNECTION')
+
+    engine = create_engine(connection_string)
+
+    db.Model.metadata.create_all(engine)
 
 @main.command()
 @click.option('--bind-host', default='0.0.0.0')
