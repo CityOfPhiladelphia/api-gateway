@@ -11,14 +11,18 @@ from api_gateway.app import app as app_orig
 from api_gateway.models import db, User, Key, Ban, CIDRBlock
 
 @pytest.fixture
-def app():
+def models():
     with app_orig.app_context():
         db.create_all()
 
-    yield app_orig
+    yield None
 
     with app_orig.app_context():
         db.drop_all()
+
+@pytest.fixture
+def app(models):
+    yield app_orig
 
 @pytest.fixture
 def model_fixtures(app):

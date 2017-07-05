@@ -1,4 +1,5 @@
 import os
+import time
 import json
 import logging
 from functools import reduce
@@ -7,15 +8,11 @@ from datetime import datetime
 
 import boto3
 import arrow
-import click
 from sqlalchemy import create_engine
 
 FORMAT = '[%(asctime)-15s] %(levelname)s [%(name)s] %(message)s'
 logging.basicConfig(format=FORMAT, level=logging.INFO)
 logger = logging.getLogger('analytics_worker')
-
-sqs_queue_url = os.getenv('SQS_QUEUE_URL')
-db_connection_string = os.getenv('SQLALCHEMY_DATABASE_URI')
 
 sqs = boto3.client('sqs')
 
@@ -101,7 +98,7 @@ def aggregate_requests(messages):
 
             yield aggregate
 
-def get_messages(total_count=0, max_total=100, wait_time_seconds=20, max_messages_per_call=10):
+def get_messages(sqs_queue_url, total_count=0, max_total=100, wait_time_seconds=20, max_messages_per_call=10):
     response = sqs.receive_message(
         QueueUrl=sqs_queue_url,
         MaxNumberOfMessages=max_messages_per_call,
@@ -133,21 +130,25 @@ def get_delete_handle(message):
         'ReceiptHandle': message['ReceiptHandle']
     }
 
-def delete_messages(messages):
+def delete_messages(sqs_queue_url, messages):
     for message_batch in batch(messages, 10):
         sqs.delete_message_batch(
             QueueUrl=sqs_queue_url,
             Entries=list(map(get_delete_handle, message_batch)))
 
-@click.command()
-def main():
-    print('pofedfopko')
-    engine = create_engine(db_connection_string) ## creates connection pool
+def run_worker(sql_alchemy_connection=None, sqs_queue_url=None, num_runs=1, sleep=0):
+    connection_string = sql_alchemy_connection or os.getenv('SQLALCHEMY_DATABASE_URI')
+    sqs_queue_url = sqs_queue_url or os.getenv('SQS_QUEUE_URL')
+
+    engine = create_engine(connection_string) ## creates connection pool
 
     logger.info('Analytics worker up...')
 
-    while True:
-        messages = get_messages()
+    for n in range(0, num_runs):
+        if n > 0 and sleep > 0:
+            time.sleep(sleep)
+
+        messages = get_messages(sqs_queue_url)
 
         if len(messages) == 0:
             continue
@@ -160,7 +161,4 @@ def main():
 
         conn.close() ## returns connection to pool
 
-        delete_messages(messages)
-
-if __name__ == '__main__':
-    main()
+        delete_messages(sqs_queue_url, messages)

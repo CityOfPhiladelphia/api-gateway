@@ -46,7 +46,7 @@ function errorReq(req, res, err) {
   utils.abort(req, res, 500, { message: 'Internal Server Error' });
 }
 
-http.createServer(function(req, res) {
+const server = http.createServer(function(req, res) {
   // TODO: try/catch with 500?
 
   req.startTime = new Date();
@@ -87,5 +87,8 @@ http.createServer(function(req, res) {
 })
 .setTimeout(utils.GATEWAY_TIMEOUT)
 .listen(process.env.GATEWAY_HTTP_PORT || 8080, function () {
-  utils.logger.info('Gateway up...');
+  var address = server.address();
+  utils.logger.info('Gateway up ' + address.address + ':' + address.port);
 });
+
+module.exports.server = server

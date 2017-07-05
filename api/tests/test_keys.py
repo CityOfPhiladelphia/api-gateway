@@ -3,7 +3,7 @@ from datetime import datetime
 
 import pytest
 
-from shared_fixtures import app, model_fixtures
+from shared_fixtures import models, app, model_fixtures
 from restful_ben.test_utils import json_call, dict_contains, iso_regex, login
 
 key_regex = re.compile('^[0-9a-f]{64}$')

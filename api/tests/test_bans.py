@@ -1,6 +1,6 @@
 import pytest
 
-from shared_fixtures import app, model_fixtures
+from shared_fixtures import models, app, model_fixtures
 from restful_ben.test_utils import json_call, dict_contains, iso_regex, login
 
 def test_create_ban(app, model_fixtures):

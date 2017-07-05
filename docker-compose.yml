@@ -34,6 +34,7 @@ services:
       - postgres
     volumes:
       - ./api:/app
+    command: api_gateway api_server
     ports:
       - "8000:5000"
     environment:
@@ -52,7 +53,7 @@ services:
       - postgres
     volumes:
       - ./api:/app
-    command: worker.py
+    command: api_gateway worker
     environment:
       - SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://app:password@postgres/api_gateway
       - SQS_QUEUE_URL=https://sqs.us-east-1.amazonaws.com/676612114792/api-gateway-test
