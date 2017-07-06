@@ -136,6 +136,8 @@ def delete_messages(sqs_queue_url, messages):
             QueueUrl=sqs_queue_url,
             Entries=list(map(get_delete_handle, message_batch)))
 
+## TODO: set consumption rate
+## TODO: handle sigterm?
 def run_worker(sql_alchemy_connection=None, sqs_queue_url=None, num_runs=1, sleep=0):
     connection_string = sql_alchemy_connection or os.getenv('SQLALCHEMY_DATABASE_URI')
     sqs_queue_url = sqs_queue_url or os.getenv('SQS_QUEUE_URL')

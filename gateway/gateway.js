@@ -86,7 +86,7 @@ const server = http.createServer(function(req, res) {
   });
 })
 .setTimeout(utils.GATEWAY_TIMEOUT)
-.listen(process.env.GATEWAY_HTTP_PORT || 8080, function () {
+.listen(utils.GATEWAY_HTTP_PORT, function () {
   var address = server.address();
   utils.logger.info('Gateway up ' + address.address + ':' + address.port);
 });

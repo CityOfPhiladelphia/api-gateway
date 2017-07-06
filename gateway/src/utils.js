@@ -14,7 +14,9 @@ module.exports.GATEWAY_API_TOKEN = process.env.GATEWAY_KEY;
 
 module.exports.GATEWAY_REDIS_URL = process.env.GATEWAY_REDIS_URL || 'redis://127.0.0.1:6379';
 
-module.exports.GATEWAY_TIMEOUT = (process.env.GATEWAY_TIMEOUT || 300) * 1000;
+module.exports.GATEWAY_TIMEOUT = parseInt(((process.env.GATEWAY_TIMEOUT || 300) * 1000) + '') ;
+
+module.exports.GATEWAY_HTTP_PORT = parseInt((process.env.GATEWAY_HTTP_PORT || 8080) + '');
 
 const SQS_QUEUE_URL = process.env.SQS_QUEUE_URL;
 
