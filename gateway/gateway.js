@@ -79,7 +79,8 @@ const server = http.createServer(function(req, res) {
           target: target,
           ignorePath: true,
           xfwd: true,
-          preserveHeaderKeyCase: true
+          preserveHeaderKeyCase: true,
+          secure: false
         });
       });
     });
