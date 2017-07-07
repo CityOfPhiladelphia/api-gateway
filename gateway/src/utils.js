@@ -84,8 +84,7 @@ module.exports.logRequest = logRequest = function (req, res) {
   const contentLength = res.headers &&
       res.headers['content-length'] &&
       parseInt(res.headers['content-length']);
-
-  // TODO: log user agent
+  const userAgent = res.headers && res.headers['user-agent'];
 
   logger.info(util.format(
     '%s %s %s %s %s %s %s %s %s %s %s',
@@ -99,7 +98,8 @@ module.exports.logRequest = logRequest = function (req, res) {
     path,
     proxiedPath || '-',
     elapsedTime,
-    contentLength || '-'));
+    contentLength || '-',
+    userAgent && util.format('"%s"', userAgent) || '-'));
 
   if (SQS_QUEUE_URL) {
     const message = {
@@ -113,7 +113,8 @@ module.exports.logRequest = logRequest = function (req, res) {
       path: path,
       proxied_path: proxiedPath || null,
       elapsed_time: elapsedTime,
-      content_length: contentLength || null
+      content_length: contentLength || null,
+      user_agent: userAgent || null
     };
 
     sqs.sendMessage({
