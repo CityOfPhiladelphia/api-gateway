@@ -85,6 +85,8 @@ module.exports.logRequest = logRequest = function (req, res) {
       res.headers['content-length'] &&
       parseInt(res.headers['content-length']);
 
+  // TODO: log user agent
+
   logger.info(util.format(
     '%s %s %s %s %s %s %s %s %s %s %s',
     req.userIP,

@@ -60,10 +60,10 @@ def api_server(bind_host, bind_port, worker_class, prod):
 @main.command()
 @click.option('--sql-alchemy-connection')
 @click.option('--sqs-queue-url')
+@click.option('--consumption-rate', type=int, default=1000)
 @click.option('-n','--num-runs', type=int, default=10)
-@click.option('--sleep', type=int, default=0)
-def worker(sql_alchemy_connection, sqs_queue_url, num_runs, sleep):
+def worker(sql_alchemy_connection, sqs_queue_url, consumption_rate, num_runs, sleep):
     run_worker(sql_alchemy_connection=sql_alchemy_connection,
                sqs_queue_url=sqs_queue_url,
                num_runs=num_runs,
-               sleep=sleep)
+               consumption_rate=consumption_rate)

@@ -1,6 +1,7 @@
 import os
 import time
 import json
+import sys
 import logging
 from functools import reduce
 from itertools import groupby
@@ -136,31 +137,45 @@ def delete_messages(sqs_queue_url, messages):
             QueueUrl=sqs_queue_url,
             Entries=list(map(get_delete_handle, message_batch)))
 
-## TODO: set consumption rate
-## TODO: handle sigterm?
-def run_worker(sql_alchemy_connection=None, sqs_queue_url=None, num_runs=1, sleep=0):
+def aggregate_messages(engine, messages):
+    conn = engine.raw_connection()
+
+    with conn.cursor() as cur:
+        for aggregate in aggregate_requests(messages):
+            cur.execute(upsert_sql, aggregate)
+        conn.commit()
+
+    conn.close() ## returns connection to pool
+
+def rate_limit(last_message, frequency):
+    elapsed = time.time() - last_message
+    left_to_wait = frequency - elapsed
+    if left_to_wait > 0:
+        time.sleep(left_to_wait)
+
+def run_worker(sql_alchemy_connection=None, sqs_queue_url=None, consumption_rate=1000, num_runs=1):
     connection_string = sql_alchemy_connection or os.getenv('SQLALCHEMY_DATABASE_URI')
     sqs_queue_url = sqs_queue_url or os.getenv('SQS_QUEUE_URL')
+
+    last_message = 0.0
+
+    # 1 minute (60 seconds) divided by consumption_rate (messages per minute) times messages per call (10)
+    frequency = (60.0 / float(max(1, min(sys.maxsize, consumption_rate)))) * 10.0
 
     engine = create_engine(connection_string) ## creates connection pool
 
     logger.info('Analytics worker up...')
 
     for n in range(0, num_runs):
-        if n > 0 and sleep > 0:
-            time.sleep(sleep)
+        rate_limit(last_message, frequency)
 
         messages = get_messages(sqs_queue_url)
 
         if len(messages) == 0:
             continue
 
-        conn = engine.raw_connection()
-
-        with conn.cursor() as cur:
-            for aggregate in aggregate_requests(messages):
-                cur.execute(upsert_sql, aggregate)
-
-        conn.close() ## returns connection to pool
+        aggregate_messages(engine, messages)
 
         delete_messages(sqs_queue_url, messages)
+
+        last_message = time.time()
