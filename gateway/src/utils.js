@@ -84,7 +84,7 @@ module.exports.logRequest = logRequest = function (req, res) {
   const contentLength = res.headers &&
       res.headers['content-length'] &&
       parseInt(res.headers['content-length']);
-  const userAgent = res.headers && res.headers['user-agent'];
+  const userAgent = req.headers && req.headers['user-agent'];
 
   logger.info(util.format(
     '%s %s %s %s %s %s %s %s %s %s %s',
