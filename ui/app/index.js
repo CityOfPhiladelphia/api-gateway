@@ -1,12 +1,13 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import injectTapEventPlugin from 'react-tap-event-plugin';
+import Vue from 'vue'
+import Vuetify from 'vuetify'
+import VueMoment from 'vue-moment'
 
-injectTapEventPlugin();
+import router from './router'
 
-import routes from './config/routes';
+Vue.use(Vuetify)
+Vue.use(VueMoment)
 
-ReactDOM.render(
-  routes,
-  document.getElementById('app')
-);
+new Vue({
+  el: '#app',
+  router
+})
